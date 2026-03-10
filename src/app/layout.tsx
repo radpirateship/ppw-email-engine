@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Sidebar from "@/components/Sidebar";
 
 export const metadata: Metadata = {
   title: "PPW Email Engine",
@@ -14,8 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-ppw-dark text-gray-100 min-h-screen">
-        {children}
+      <body className="bg-gray-50 text-gray-900 min-h-screen flex">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
       </body>
     </html>
   );
