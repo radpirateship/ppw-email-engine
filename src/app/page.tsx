@@ -1,6 +1,8 @@
 // ============================================================================
-// PPW Email Engine — Landing / Dashboard Shell
+// PPW Email Engine — Dashboard Home
 // ============================================================================
+
+import Link from "next/link";
 
 const FEATURES = [
   {
@@ -25,8 +27,9 @@ const FEATURES = [
   },
   {
     name: "Framework Knowledge Base",
-    status: "planned" as const,
+    status: "active" as const,
     description: "Naming conventions, tags, categories, and flow architecture.",
+    href: "/framework",
   },
   {
     name: "Product Recommendation Engine",
@@ -46,62 +49,74 @@ const FEATURES = [
 ];
 
 const STATUS_STYLES = {
-  planned: "bg-gray-700 text-gray-300",
-  building: "bg-yellow-900 text-yellow-300",
-  live: "bg-green-900 text-green-300",
+  planned: "bg-gray-100 text-gray-500",
+  building: "bg-yellow-100 text-yellow-700",
+  active: "bg-green-100 text-green-700",
+  live: "bg-green-100 text-green-700",
 };
 
 export default function Home() {
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
+    <div className="px-8 py-8 max-w-5xl">
       {/* Header */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">
-          PPW Email Engine
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+          Dashboard
         </h1>
-        <p className="text-lg text-gray-400">
+        <p className="text-sm text-gray-500 mt-1">
           Email marketing command center for Peak Primal Wellness
         </p>
-        <div className="mt-4 flex gap-3 text-sm text-gray-500">
-          <span>14 Categories</span>
-          <span>&middot;</span>
-          <span>1,557 Products</span>
-          <span>&middot;</span>
-          <span>49 Brands</span>
-          <span>&middot;</span>
-          <span>350+ Content Pieces</span>
+        <div className="mt-3 flex gap-3 text-xs text-gray-400">
+          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">14 Categories</span>
+          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">1,557 Products</span>
+          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">49 Brands</span>
+          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">350+ Content Pieces</span>
         </div>
       </div>
 
       {/* Feature Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {FEATURES.map((feature, i) => (
-          <div
-            key={feature.name}
-            className="border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition-colors"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <h2 className="text-lg font-semibold">
-                <span className="text-gray-500 mr-2 font-mono text-sm">
-                  {String(i + 1).padStart(2, "0")}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {FEATURES.map((feature, i) => {
+          const card = (
+            <div
+              className={`bg-white border border-gray-200 rounded-lg p-5 transition-all ${
+                feature.status === "active"
+                  ? "ring-2 ring-green-200 hover:shadow-md cursor-pointer"
+                  : "hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  <span className="text-gray-400 mr-2 font-mono text-xs">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  {feature.name}
+                </h2>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[feature.status]}`}
+                >
+                  {feature.status}
                 </span>
-                {feature.name}
-              </h2>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[feature.status]}`}
-              >
-                {feature.status}
-              </span>
+              </div>
+              <p className="text-xs text-gray-500">{feature.description}</p>
             </div>
-            <p className="text-sm text-gray-400">{feature.description}</p>
-          </div>
-        ))}
+          );
+
+          if ("href" in feature && feature.href) {
+            return (
+              <Link key={feature.name} href={feature.href}>
+                {card}
+              </Link>
+            );
+          }
+          return <div key={feature.name}>{card}</div>;
+        })}
       </div>
 
       {/* Footer */}
-      <div className="mt-16 pt-6 border-t border-gray-800 text-center text-sm text-gray-600">
-        PPW Email Engine v0.1.0 &middot; Phase 1: Scaffold
+      <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
+        PPW Email Engine v0.2.0 &middot; Phase 3: Framework Knowledge Base
       </div>
-    </main>
+    </div>
   );
 }
