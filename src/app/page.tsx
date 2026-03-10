@@ -43,8 +43,9 @@ const FEATURES = [
   },
   {
     name: "Category Completion Tracker",
-    status: "planned" as const,
+    status: "active" as const,
     description: "Bird's-eye view of email marketing readiness per category.",
+    href: "/completion",
   },
 ];
 
@@ -115,7 +116,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.2.0 &middot; Phase 3: Framework Knowledge Base
+        PPW Email Engine v0.3.0 &middot; Phase 4: Completion Tracker
       </div>
     </div>
   );
