@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Sidebar navigation active state */
+.nav-active {
+  @apply bg-green-50 text-green-700 border-r-2 border-green-600;
+}
