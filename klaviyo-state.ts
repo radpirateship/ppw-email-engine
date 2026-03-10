@@ -28,6 +28,8 @@ export interface KlaviyoSegment {
   id: string;
   name: string;
   isActive: boolean;
+  /** Which framework category this maps to, or null for general */
+  categoryCode?: string | null;
   /** Which framework segment group this maps to */
   segmentGroup: "hot" | "warm" | "customer" | "interest" | "tier" | "other";
 }
