@@ -1,16 +1,12 @@
 // ============================================================================
 // PPW Email Engine — Framework Barrel Export
 // ============================================================================
-// Each module will be added here as it's built:
-//   - categories.ts    (Phase 2)
-//   - price-tiers.ts   (Phase 2)
-//   - naming.ts        (Phase 2)
-//   - tags.ts          (Phase 2)
-//   - flows.ts         (Phase 2)
-//   - segments.ts      (Phase 2)
-//   - lists.ts         (Phase 2)
-//   - content-map.ts   (Phase 2)
-// ============================================================================
 
-export {};
-
+export * from "./categories";
+export * from "./price-tiers";
+export * from "./naming";
+export * from "./tags";
+export * from "./flows";
+export * from "./segments";
+export * from "./lists";
+export * from "./content-map";
