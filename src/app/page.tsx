@@ -7,8 +7,9 @@ import Link from "next/link";
 const FEATURES = [
   {
     name: "Email Copy Generator",
-    status: "planned" as const,
+    status: "active" as const,
     description: "Generate Klaviyo-ready email copy with dynamic tags and conditional blocks.",
+    href: "/copy-generator",
   },
   {
     name: "Content-to-Email Pipeline",
@@ -117,7 +118,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.4.0 &middot; Phase 5: Content Pipeline
+        PPW Email Engine v0.5.0 &middot; Phase 6: Email Copy Generator
       </div>
     </div>
   );
