@@ -15,3 +15,22 @@ export * from "./completion";
 export * from "./classifier";
 export * from "./email-templates";
 export * from "./flow-dashboard";
+export {
+  type Product,
+  PRODUCTS,
+  CATALOG_STATS,
+  getProductById,
+  getProductsByCategory,
+  getProductsByVendor,
+  getProductsByPriceTier,
+  getTopRatedProducts,
+} from "./product-catalog";
+export {
+  type QuizProfile,
+  type Recommendation,
+  type RecommendationSet,
+  generateRecommendations,
+  getCategoryProductSummary,
+  getComplementaryProducts,
+  toKlaviyoDynamicBlock,
+} from "./recommendation-engine";

@@ -36,8 +36,9 @@ const FEATURES = [
   },
   {
     name: "Product Recommendation Engine",
-    status: "planned" as const,
+    status: "active" as const,
     description: "Product-to-quiz mapping across categories and price tiers.",
+    href: "/recommendations",
   },
   {
     name: "Campaign Calendar",
@@ -72,8 +73,8 @@ export default function Home() {
         </p>
         <div className="mt-3 flex gap-3 text-xs text-gray-400">
           <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">14 Categories</span>
-          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">1,557 Products</span>
-          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">49 Brands</span>
+          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">1,405 Products</span>
+          <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">48 Brands</span>
           <span className="px-2.5 py-1 bg-white border border-gray-200 rounded-full">350+ Content Pieces</span>
         </div>
       </div>
@@ -119,7 +120,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.6.0 &middot; Phase 7: Flow Builder
+        PPW Email Engine v0.7.0 &middot; Phase 8: Product Recommendations
       </div>
     </div>
   );
