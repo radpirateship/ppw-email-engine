@@ -103,7 +103,7 @@ function buildEmailPrompt(
 ): string {
   // Get price tier context
   const tierInfo = Object.values(PRICE_TIERS)
-    .map((t) => `${t.name} (${t.range}): ${t.emailStrategy}`)
+    .map((t) => `${t.name} ($${t.minPrice}${t.maxPrice ? `-$${t.maxPrice}` : "+"}): ${t.emailStrategy}`)
     .join("\n");
 
   return `Generate email content for position ${position} (Day ${day}) in the ${categoryName} 45-day nurture flow.
