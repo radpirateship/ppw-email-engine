@@ -340,7 +340,7 @@ export default function TemplatesPage() {
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-400">
         <span>
-          PPW Email Engine v0.9.0 &middot; Phase 9: Template Manager
+          PPW Email Engine v0.10.0 &middot; Phase 10: Campaign Calendar
         </span>
         <Link
           href="/klaviyo"
