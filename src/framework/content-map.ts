@@ -201,6 +201,7 @@ export const CATEGORY_CONTENT: CategoryContentInventory[] = [
     pillarContent: "Sports Equipment Guide",
     contentAreas: ["Lacrosse, athlete management"],
   },
+  // Add new category content above this line
 ];
 
 export function getContentForCategory(

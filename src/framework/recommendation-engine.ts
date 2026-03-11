@@ -65,6 +65,7 @@ const CROSS_SELL_MAP: Record<string, string[]> = {
   PEM: ["RLT", "MSC", "CLD"],
   FLT: ["CLD", "SLP", "MSC"],
   HWL: ["SAU", "AIR", "WTR"],
+  // Add new cross-sell entries above this line
 };
 
 // ---------------------------------------------------------------------------

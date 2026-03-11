@@ -139,6 +139,7 @@ export const CATEGORIES: Record<string, Category> = {
     hasQuiz: false,
     tagSlug: "home-wellness",
   },
+  // Add new categories above this line
 } as const;
 
 export const CATEGORY_CODES = Object.keys(CATEGORIES) as Array<

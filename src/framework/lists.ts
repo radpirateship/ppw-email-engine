@@ -43,6 +43,7 @@ const CATEGORY_LISTS: ListDefinition[] = [
   { id: "L-REC-Subscribers", name: "Recovery Subscribers", type: "category", entryCriteria: "Massage/recovery interest" },
   { id: "L-PIL-Subscribers", name: "Pilates Subscribers", type: "category", entryCriteria: "Pilates equipment interest" },
   { id: "L-GYM-Subscribers", name: "Home Gym Subscribers", type: "category", entryCriteria: "Home gym equipment interest" },
+  // Add new category lists above this line
 ];
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ const QUIZ_LISTS: ListDefinition[] = [
   { id: "L-QUIZ-Red-Light", name: "Red Light Quiz Completers", type: "quiz", entryCriteria: "Completed red light quiz" },
   { id: "L-QUIZ-Hyperbaric", name: "Hyperbaric Quiz Completers", type: "quiz", entryCriteria: "Completed hyperbaric quiz" },
   { id: "L-QUIZ-Recovery", name: "Recovery Quiz Completers", type: "quiz", entryCriteria: "Completed general recovery quiz" },
+  // Add new quiz lists above this line
 ];
 
 // ---------------------------------------------------------------------------

@@ -71,6 +71,12 @@ const FEATURES = [
     description: "Customize email colors, fonts, and spacing with live preview and style presets.",
     href: "/style-editor",
   },
+  {
+    name: "Category Propagator",
+    status: "active" as const,
+    description: "Add new product categories and auto-generate all framework files — lists, segments, flows, and templates.",
+    href: "/propagate",
+  },
 ];
 
 const STATUS_STYLES = {
@@ -140,7 +146,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.11.0 &middot; Phase 11: Email Style Editor
+        PPW Email Engine v0.12.0 &middot; Phase 12: Category Propagator
       </div>
     </div>
   );

@@ -106,6 +106,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Category Propagator",
+    href: "/propagate",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     label: "Campaign Calendar",
     href: "/campaigns",
     icon: (
@@ -134,7 +143,7 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-sm font-bold text-gray-900 leading-tight">PPW Email Engine</h1>
-            <p className="text-[10px] text-gray-400 leading-tight">v0.11.0 \u00b7 Phase 11</p>
+            <p className="text-[10px] text-gray-400 leading-tight">v0.12.0 \u00b7 Phase 12</p>
           </div>
         </div>
       </div>

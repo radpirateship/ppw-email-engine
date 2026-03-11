@@ -198,6 +198,7 @@ const INTEREST_SEGMENTS: SegmentDefinition[] = [
     ],
     description: "Interested in massage & recovery",
   },
+  // Add new interest segments above this line
 ];
 
 // ---------------------------------------------------------------------------

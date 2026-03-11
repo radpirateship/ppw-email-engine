@@ -168,6 +168,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "wellness", "air purifier", "PEMF", "steam shower",
     "home wellness", "indoor air", "pulsed electromagnetic",
   ],
+  // Add new category keywords above this line
 };
 
 // ---------------------------------------------------------------------------
