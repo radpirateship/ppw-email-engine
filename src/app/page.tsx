@@ -19,8 +19,9 @@ const FEATURES = [
   },
   {
     name: "Flow Builder / Status Dashboard",
-    status: "planned" as const,
+    status: "active" as const,
     description: "Track all flows by category, status, and email completion.",
+    href: "/flow-builder",
   },
   {
     name: "Klaviyo Sync Layer",
@@ -118,7 +119,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.5.0 &middot; Phase 6: Email Copy Generator
+        PPW Email Engine v0.6.0 &middot; Phase 7: Flow Builder
       </div>
     </div>
   );
