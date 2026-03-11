@@ -65,6 +65,12 @@ const FEATURES = [
     description: "Bird's-eye view of email marketing readiness per category.",
     href: "/completion",
   },
+  {
+    name: "Email Style Editor",
+    status: "active" as const,
+    description: "Customize email colors, fonts, and spacing with live preview and style presets.",
+    href: "/style-editor",
+  },
 ];
 
 const STATUS_STYLES = {
@@ -134,7 +140,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.10.0 &middot; Phase 10: Campaign Calendar
+        PPW Email Engine v0.11.0 &middot; Phase 11: Email Style Editor
       </div>
     </div>
   );

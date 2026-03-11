@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CATEGORIES } from "@/framework/categories";
 import { NURTURE_EMAIL_POSITIONS } from "@/framework/content-map";
 import { PRICE_TIERS } from "@/framework/price-tiers";
+import { DEFAULT_STYLE, wrapEmailHtml, getInlineStyleHints } from "@/framework/email-styles";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,6 +70,8 @@ HTML OUTPUT RULES:
 - Use Klaviyo conditional blocks: {% if variable %} ... {% endif %}
 - Include proper alt text on images
 - Keep HTML email-client compatible (tables for layout if needed, inline styles)
+
+${getInlineStyleHints(DEFAULT_STYLE)}
 
 KLAVIYO VARIABLES AVAILABLE:
 - {{ first_name|default:"there" }} — subscriber's first name
@@ -144,50 +147,8 @@ Respond in valid JSON format:
 }
 
 // ---------------------------------------------------------------------------
-// HTML wrapper (same styling as existing templates)
+// HTML wrapper — now uses centralized email-styles engine
 // ---------------------------------------------------------------------------
-
-function wrapHtml(inner: string, preheader: string): string {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Peak Primal Wellness</title>
-  <style>
-    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f4; color: #333333; }
-    .wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-    .header { background-color: #1a5632; padding: 24px 32px; text-align: center; }
-    .header h1 { color: #ffffff; font-size: 18px; margin: 8px 0 0; font-weight: 600; }
-    .content { padding: 32px; }
-    .content h2 { color: #1a5632; font-size: 22px; margin-top: 0; }
-    .content p { font-size: 15px; line-height: 1.6; color: #555555; }
-    .cta-btn { display: inline-block; background-color: #2d8a4e; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; margin: 16px 0; }
-    .product-card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; }
-    .product-card img { max-width: 200px; margin-bottom: 12px; }
-    .footer { background-color: #f8f8f8; padding: 24px 32px; text-align: center; font-size: 12px; color: #999999; }
-    .footer a { color: #2d8a4e; text-decoration: none; }
-    .preheader { display: none !important; max-height: 0; overflow: hidden; mso-hide: all; }
-  </style>
-</head>
-<body>
-  <div class="preheader">${preheader}</div>
-  <div class="wrapper">
-    <div class="header">
-      <h1>Peak Primal Wellness</h1>
-    </div>
-    <div class="content">
-${inner}
-    </div>
-    <div class="footer">
-      <p>Peak Primal Wellness &middot; Your Home Wellness Experts</p>
-      <p><a href="{{ consultation_url }}">Schedule a Free Consultation</a> &middot; <a href="{{ unsubscribe_url }}">Unsubscribe</a></p>
-      <p style="font-size: 10px; color: #cccccc;">You're receiving this because you signed up at peakprimalwellness.com</p>
-    </div>
-  </div>
-</body>
-</html>`;
-}
 
 // ---------------------------------------------------------------------------
 // Claude API call
@@ -306,8 +267,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Wrap the inner HTML in the full email template
-    const fullHtml = wrapHtml(parsed.htmlBody, parsed.previewText);
+    // Wrap the inner HTML in the full email template using centralized style engine
+    const fullHtml = wrapEmailHtml(parsed.htmlBody, parsed.previewText, DEFAULT_STYLE);
 
     // Build template name using naming convention
     const templateName = `T-${categoryCode}-Nurture-${position}`;
