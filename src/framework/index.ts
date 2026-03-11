@@ -12,3 +12,4 @@ export * from "./lists";
 export * from "./content-map";
 export * from "./klaviyo-state";
 export * from "./completion";
+export * from "./classifier";

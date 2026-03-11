@@ -12,8 +12,9 @@ const FEATURES = [
   },
   {
     name: "Content-to-Email Pipeline",
-    status: "planned" as const,
+    status: "active" as const,
     description: "Auto-classify content and map it to the 45-day nurture flow.",
+    href: "/pipeline",
   },
   {
     name: "Flow Builder / Status Dashboard",
@@ -116,7 +117,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.3.0 &middot; Phase 4: Completion Tracker
+        PPW Email Engine v0.4.0 &middot; Phase 5: Content Pipeline
       </div>
     </div>
   );
