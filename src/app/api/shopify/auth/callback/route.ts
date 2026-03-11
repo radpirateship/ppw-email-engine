@@ -1,3 +1,5 @@
+// PPW Email Engine - Shopify OAuth Callback
+// Exchanges authorization code for permanent shpat_ access token
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
