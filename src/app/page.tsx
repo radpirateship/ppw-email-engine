@@ -25,8 +25,9 @@ const FEATURES = [
   },
   {
     name: "Klaviyo Sync Layer",
-    status: "planned" as const,
-    description: "Pull and push Klaviyo state — templates, flows, performance.",
+    status: "active" as const,
+    description: "Live Klaviyo state — flows, lists, segments, metrics, health score.",
+    href: "/klaviyo",
   },
   {
     name: "Framework Knowledge Base",
@@ -120,7 +121,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.7.0 &middot; Phase 8: Product Recommendations
+        PPW Email Engine v0.8.0 &middot; Phase 9: Klaviyo Live Sync
       </div>
     </div>
   );

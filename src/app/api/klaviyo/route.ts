@@ -1,8 +1,15 @@
 // ============================================================================
 // API: /api/klaviyo
-// Returns the current Klaviyo state snapshot.
-// Phase 1: static snapshot from klaviyo-state.ts
-// Phase 2: will call Klaviyo API for real-time data
+// Returns the current Klaviyo state snapshot — live data with auto-classification.
+// Phase 2: Powered by live Klaviyo API pull + auto-classification engine.
+//
+// GET /api/klaviyo                → full state
+// GET /api/klaviyo?section=flows  → flows only
+// GET /api/klaviyo?section=lists  → lists only
+// GET /api/klaviyo?section=segments
+// GET /api/klaviyo?section=quizzes
+// GET /api/klaviyo?section=metrics
+// GET /api/klaviyo?section=summary → compact summary for dashboards
 // ============================================================================
 
 import { NextResponse } from "next/server";
@@ -11,29 +18,44 @@ import {
   LIVE_LISTS,
   LIVE_SEGMENTS,
   QUIZ_METRICS,
+  KEY_METRICS,
   KLAVIYO_SNAPSHOT,
+  getFlowsByCategory,
+  getFlowsByStatus,
+  getListsByCategory,
 } from "@/framework/klaviyo-state";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get("section");
+  const categoryFilter = searchParams.get("category");
 
   try {
-    // Return specific section if requested
+    // ---- Section-specific queries ----
     if (section) {
       switch (section) {
-        case "flows":
+        case "flows": {
+          const flows = categoryFilter
+            ? getFlowsByCategory(categoryFilter.toUpperCase())
+            : LIVE_FLOWS;
           return NextResponse.json({
-            flows: LIVE_FLOWS,
-            count: LIVE_FLOWS.length,
+            flows,
+            count: flows.length,
+            live: flows.filter((f) => f.status === "live").length,
+            draft: flows.filter((f) => f.status === "draft").length,
             snapshot: KLAVIYO_SNAPSHOT,
           });
-        case "lists":
+        }
+        case "lists": {
+          const lists = categoryFilter
+            ? getListsByCategory(categoryFilter.toUpperCase())
+            : LIVE_LISTS;
           return NextResponse.json({
-            lists: LIVE_LISTS,
-            count: LIVE_LISTS.length,
+            lists,
+            count: lists.length,
             snapshot: KLAVIYO_SNAPSHOT,
           });
+        }
         case "segments":
           return NextResponse.json({
             segments: LIVE_SEGMENTS,
@@ -46,15 +68,37 @@ export async function GET(request: Request) {
             count: QUIZ_METRICS.length,
             snapshot: KLAVIYO_SNAPSHOT,
           });
+        case "metrics":
+          return NextResponse.json({
+            metrics: KEY_METRICS,
+            count: KEY_METRICS.length,
+            snapshot: KLAVIYO_SNAPSHOT,
+          });
+        case "summary":
+          return NextResponse.json({
+            snapshot: KLAVIYO_SNAPSHOT,
+            flowsByStatus: {
+              live: getFlowsByStatus("live").length,
+              draft: getFlowsByStatus("draft").length,
+              manual: getFlowsByStatus("manual").length,
+              paused: getFlowsByStatus("paused").length,
+            },
+            categoryCoverage: {
+              flowsWithCategory: LIVE_FLOWS.filter((f) => f.categoryCode).length,
+              flowsUncategorized: LIVE_FLOWS.filter((f) => !f.categoryCode).length,
+              listsWithCategory: LIVE_LISTS.filter((l) => l.categoryCode).length,
+              listsUncategorized: LIVE_LISTS.filter((l) => !l.categoryCode).length,
+            },
+          });
         default:
           return NextResponse.json(
-            { error: `Unknown section: ${section}. Valid: flows, lists, segments, quizzes` },
+            { error: `Unknown section: ${section}. Valid: flows, lists, segments, quizzes, metrics, summary` },
             { status: 400 }
           );
       }
     }
 
-    // Return everything
+    // ---- Full state ----
     return NextResponse.json({
       snapshot: KLAVIYO_SNAPSHOT,
       flows: {
@@ -75,10 +119,14 @@ export async function GET(request: Request) {
         data: QUIZ_METRICS,
         total: QUIZ_METRICS.length,
       },
+      metrics: {
+        data: KEY_METRICS,
+        total: KEY_METRICS.length,
+      },
       generatedAt: new Date().toISOString(),
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-        }
+}

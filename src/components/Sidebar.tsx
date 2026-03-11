@@ -69,6 +69,15 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    label: "Klaviyo Sync",
+    href: "/klaviyo",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
@@ -89,7 +98,7 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-sm font-bold text-gray-900 leading-tight">PPW Email Engine</h1>
-            <p className="text-[10px] text-gray-400 leading-tight">v0.7.0 \u00b7 Phase 8</p>
+            <p className="text-[10px] text-gray-400 leading-tight">v0.8.0 \u00b7 Phase 9</p>
           </div>
         </div>
       </div>
