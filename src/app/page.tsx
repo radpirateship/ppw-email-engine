@@ -77,6 +77,12 @@ const FEATURES = [
     description: "Add new product categories and auto-generate all framework files — lists, segments, flows, and templates.",
     href: "/propagate",
   },
+  {
+    name: "Onboarding Education Center",
+    status: "active" as const,
+    description: "Guided implementation checklist — 26 steps across 4 phases with progress tracking and milestones.",
+    href: "/onboarding",
+  },
 ];
 
 const STATUS_STYLES = {
@@ -146,7 +152,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.12.0 &middot; Phase 12: Category Propagator
+        PPW Email Engine v0.13.0 &middot; Phase 13: Onboarding Education Center
       </div>
     </div>
   );
