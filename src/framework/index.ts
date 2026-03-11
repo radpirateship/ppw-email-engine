@@ -31,6 +31,12 @@ export * from "./classifier";
 export * from "./email-templates";
 export * from "./flow-dashboard";
 export {
+  type CategoryDelta,
+  type OrphanedItem,
+  type DeltaSummary,
+  buildDeltaSummary,
+} from "./klaviyo-delta";
+export {
   type Product,
   PRODUCTS,
   CATALOG_STATS,

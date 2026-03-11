@@ -30,6 +30,12 @@ const FEATURES = [
     href: "/klaviyo",
   },
   {
+    name: "Klaviyo Delta Dashboard",
+    status: "active" as const,
+    description: "Gap analysis — framework expectations vs live Klaviyo state, per-category readiness.",
+    href: "/klaviyo/delta",
+  },
+  {
     name: "Framework Knowledge Base",
     status: "active" as const,
     description: "Naming conventions, tags, categories, and flow architecture.",
@@ -121,7 +127,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.8.0 &middot; Phase 9: Klaviyo Live Sync
+        PPW Email Engine v0.8.1 &middot; Phase 9: Klaviyo Delta Dashboard
       </div>
     </div>
   );
