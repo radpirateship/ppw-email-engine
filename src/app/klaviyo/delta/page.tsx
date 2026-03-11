@@ -376,7 +376,7 @@ export default function DeltaDashboardPage() {
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-400">
         <span>
-          PPW Email Engine v0.8.1 &middot; Phase 9: Klaviyo Delta Dashboard
+          PPW Email Engine v0.9.0 &middot; Phase 9: Template Manager
         </span>
         <Link
           href="/klaviyo"

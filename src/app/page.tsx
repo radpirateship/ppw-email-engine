@@ -48,6 +48,12 @@ const FEATURES = [
     href: "/recommendations",
   },
   {
+    name: "Template Manager",
+    status: "active" as const,
+    description: "Preview, validate, and push email templates to Klaviyo across all categories.",
+    href: "/klaviyo/templates",
+  },
+  {
     name: "Campaign Calendar",
     status: "planned" as const,
     description: "Track campaigns and suggest new ones from published content.",
@@ -127,7 +133,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.8.1 &middot; Phase 9: Klaviyo Delta Dashboard
+        PPW Email Engine v0.9.0 &middot; Phase 9: Template Manager
       </div>
     </div>
   );
