@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   CATEGORIES,
   CATEGORY_CODES,
 } from "@/framework/categories";
-import {
-  NURTURE_EMAIL_POSITIONS,
-} from "@/framework/content-map";
 import {
   loadPushRecords,
   savePushRecord,
@@ -21,6 +18,19 @@ import {
   loadKanbanTasks,
   saveKanbanTasks,
 } from "@/framework/kanban";
+import {
+  FLOW_TYPES,
+  getFlowType,
+  getFlowIdForType,
+  getTemplateNameForType,
+  type FlowTypeDefinition,
+} from "@/framework/flow-email-positions";
+import {
+  loadEmailSet,
+  saveEmailSet,
+  type StoredEmail,
+  type StoredEmailSet,
+} from "@/framework/email-store";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,10 +96,20 @@ interface PushStatus {
 }
 
 // ---------------------------------------------------------------------------
+// Quiz-enabled categories (for quiz-nurture flow)
+// ---------------------------------------------------------------------------
+
+const QUIZ_CATEGORIES = ["SAU", "CLD", "RLT", "HYP", "H2O", "REC", "PIL", "GYM"];
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function CopyGeneratorPage() {
+  // Flow type selection (NEW)
+  const [selectedFlowType, setSelectedFlowType] = useState("quiz-nurture");
+  const flowDef = getFlowType(selectedFlowType) as FlowTypeDefinition;
+
   // Selection state
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPosition, setSelectedPosition] = useState("ALL");
@@ -108,7 +128,6 @@ export default function CopyGeneratorPage() {
   // UI state
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"preview" | "html" | "text" | "edit">("preview");
-  const [editingField, setEditingField] = useState<string | null>(null);
 
   // Editable content (per position)
   const [editedSubjects, setEditedSubjects] = useState<Record<string, string>>({});
@@ -122,10 +141,113 @@ export default function CopyGeneratorPage() {
   const [pushRecords, setPushRecords] = useState<StoredPushRecord[]>([]);
   const [showInstructions, setShowInstructions] = useState<string | null>(null);
 
+  // Ref to track whether persistence save is needed
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Load push records on mount
   useEffect(() => {
     setPushRecords(loadPushRecords());
   }, []);
+
+  // Determine the effective category code for storage
+  const effectiveCategoryCode = flowDef?.requiresCategory
+    ? selectedCategory
+    : "ALL";
+
+  // ---------------------------------------------------------------------------
+  // Load persisted emails when flow type or category changes
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!flowDef) return;
+    if (flowDef.requiresCategory && !selectedCategory) return;
+
+    const stored = loadEmailSet(selectedFlowType, effectiveCategoryCode);
+    if (stored && stored.emails.length > 0) {
+      // Restore emails
+      setEmails(
+        stored.emails.map((e) => ({
+          ...e,
+          isAI: e.isAI ?? true,
+        }))
+      );
+      setEditedSubjects(stored.editedSubjects || {});
+      setEditedPreviews(stored.editedPreviews || {});
+      setEditedHtml(stored.editedHtml || {});
+      setEditedPlainText(stored.editedPlainText || {});
+    } else {
+      // No stored data — clear state
+      setEmails([]);
+      setEditedSubjects({});
+      setEditedPreviews({});
+      setEditedHtml({});
+      setEditedPlainText({});
+    }
+    setExpandedEmail(null);
+    setPushStatuses({});
+    setShowInstructions(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFlowType, selectedCategory]);
+
+  // ---------------------------------------------------------------------------
+  // Auto-save to localStorage when emails or edits change (debounced)
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (emails.length === 0) return;
+    if (!flowDef) return;
+    if (flowDef.requiresCategory && !selectedCategory) return;
+
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      const storedEmails: StoredEmail[] = emails.map((e) => ({
+        subject: e.subject,
+        previewText: e.previewText,
+        htmlBody: e.htmlBody,
+        plainText: e.plainText,
+        position: e.position,
+        day: e.day,
+        categoryCode: e.categoryCode,
+        categoryName: e.categoryName,
+        purpose: e.purpose,
+        templateName: e.templateName,
+        generatedAt: e.generatedAt,
+        variationSeed: e.variationSeed,
+        isAI: e.isAI,
+      }));
+
+      saveEmailSet(selectedFlowType, effectiveCategoryCode, {
+        flowTypeId: selectedFlowType,
+        categoryCode: effectiveCategoryCode,
+        emails: storedEmails,
+        editedSubjects,
+        editedPreviews,
+        editedHtml,
+        editedPlainText,
+      });
+    }, 500);
+
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    };
+  }, [emails, editedSubjects, editedPreviews, editedHtml, editedPlainText, selectedFlowType, effectiveCategoryCode, flowDef, selectedCategory]);
+
+  // ---------------------------------------------------------------------------
+  // Reset position when flow type changes
+  // ---------------------------------------------------------------------------
+
+  const handleFlowTypeChange = (newFlowType: string) => {
+    setSelectedFlowType(newFlowType);
+    setSelectedPosition("ALL");
+    setError("");
+    // Category reset handled if new flow doesn't require it
+    const newDef = getFlowType(newFlowType);
+    if (newDef && !newDef.requiresCategory) {
+      setSelectedCategory("ALL");
+    } else if (newDef && newDef.requiresCategory && selectedCategory === "ALL") {
+      setSelectedCategory("");
+    }
+  };
 
   // -------------------------------------------------------------------------
   // AI Generation (single position)
@@ -134,15 +256,22 @@ export default function CopyGeneratorPage() {
   const generateAI = useCallback(
     async (position: string, seed?: number) => {
       const variationSeed = seed ?? Math.floor(Math.random() * 10000);
-      const cat = CATEGORIES[selectedCategory as keyof typeof CATEGORIES];
-      if (!cat) return;
+      const catCode = flowDef?.requiresCategory ? selectedCategory : "ALL";
+      const cat = CATEGORIES[catCode as keyof typeof CATEGORIES];
+      if (!cat && flowDef?.requiresCategory) return;
+
+      // For non-category flows, use a generic fallback
+      const categoryName = cat?.name || "All Categories";
+      const keyProducts = cat?.keyProducts || [];
+      const articleCount = cat?.articleCount || 0;
 
       const res = await fetch("/api/generate-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          categoryCode: selectedCategory,
+          categoryCode: catCode,
           position,
+          flowType: selectedFlowType,
           tone,
           additionalContext: additionalContext || undefined,
           variationSeed,
@@ -169,11 +298,11 @@ export default function CopyGeneratorPage() {
         isAI: true,
       } as DisplayEmail;
     },
-    [selectedCategory, tone, additionalContext]
+    [selectedCategory, selectedFlowType, flowDef, tone, additionalContext]
   );
 
   // -------------------------------------------------------------------------
-  // Legacy generation (template-based)
+  // Legacy generation (template-based) — only for quiz-nurture
   // -------------------------------------------------------------------------
 
   const generateLegacy = useCallback(async () => {
@@ -208,7 +337,7 @@ export default function CopyGeneratorPage() {
   // -------------------------------------------------------------------------
 
   const handleGenerate = async () => {
-    if (!selectedCategory) {
+    if (flowDef?.requiresCategory && !selectedCategory) {
       setError("Please select a category.");
       return;
     }
@@ -225,7 +354,7 @@ export default function CopyGeneratorPage() {
         // Determine which positions to generate
         const positions =
           selectedPosition === "ALL"
-            ? NURTURE_EMAIL_POSITIONS.map((p) => p.position)
+            ? flowDef.positions.map((p) => p.position)
             : [selectedPosition];
 
         const results: DisplayEmail[] = [];
@@ -394,19 +523,20 @@ export default function CopyGeneratorPage() {
     markPushRecordLive(email.categoryCode, email.position);
     setPushRecords(loadPushRecords());
 
-    // 2. Update flow status override (marks the nurture flow as "built" or "live")
-    // The flow ID pattern for nurture flows: F-[CAT]-Nurture
-    const flowId = `F-${email.categoryCode}-Nurture`;
-    saveOverride(flowId, "live");
+    // 2. Update flow status override using flow-type-aware ID
+    const flowId = getFlowIdForType(selectedFlowType, effectiveCategoryCode);
+    if (flowId) {
+      saveOverride(flowId, "live");
+    }
 
     // 3. Move related kanban tasks to "done"
     try {
       const tasks = loadKanbanTasks();
       const updated = tasks.map((t) => {
-        // Match tasks related to this category's nurture flow
         if (
           t.category === email.categoryCode &&
-          (t.id.includes("nurture") || t.id.includes("Nurture")) &&
+          (t.id.toLowerCase().includes(selectedFlowType) ||
+            t.id.toLowerCase().includes(flowDef?.name?.toLowerCase()?.split(" ")[0] || "")) &&
           t.column !== "done"
         ) {
           return { ...t, column: "done" as const };
@@ -423,7 +553,7 @@ export default function CopyGeneratorPage() {
       ...prev,
       [email.position]: {
         ...prev[email.position],
-        state: "pushed", // Keep as pushed, the record itself tracks "live"
+        state: "pushed",
       },
     }));
   };
@@ -466,6 +596,27 @@ export default function CopyGeneratorPage() {
     editedPlainText[e.position] !== undefined;
 
   // -------------------------------------------------------------------------
+  // Derived values for the selected flow type
+  // -------------------------------------------------------------------------
+
+  const totalPositions = flowDef?.positions.length ?? 0;
+  const positionRange = flowDef
+    ? `${flowDef.positions[0]?.position}–${flowDef.positions[flowDef.positions.length - 1]?.position}`
+    : "";
+
+  // Determine which categories to show based on flow type
+  const availableCategories = flowDef?.requiresCategory
+    ? selectedFlowType === "quiz-nurture"
+      ? QUIZ_CATEGORIES
+      : CATEGORY_CODES
+    : [];
+
+  // Whether the "generate" button should be enabled
+  const canGenerate =
+    !loading &&
+    (flowDef?.requiresCategory ? !!selectedCategory : true);
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
@@ -485,36 +636,66 @@ export default function CopyGeneratorPage() {
         </div>
         <p className="text-sm text-gray-500 mt-1">
           {useAI
-            ? "Generate unique, AI-written email content for your 45-day nurture flow. Each generation produces fresh, category-specific content."
-            : "Generate Klaviyo-ready email copy from templates for each position in the 45-day nurture flow."}
+            ? `Generate unique, AI-written email content for your ${flowDef?.name || "email flow"}. Each generation produces fresh, category-specific content.`
+            : `Generate Klaviyo-ready email copy from templates for the ${flowDef?.name || "email flow"}.`}
         </p>
       </div>
 
       {/* Controls */}
       <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6 space-y-4">
+        {/* Row 0: Flow Type Selector */}
+        <div className="pb-4 border-b border-gray-100">
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Flow Type
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {FLOW_TYPES.map((ft) => (
+              <button
+                key={ft.id}
+                onClick={() => handleFlowTypeChange(ft.id)}
+                className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
+                  selectedFlowType === ft.id
+                    ? "border-green-500 bg-green-50 text-green-800 ring-2 ring-green-200"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                <p className="font-medium text-xs leading-tight">{ft.name}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {ft.positions.length} emails &middot;{" "}
+                  {ft.requiresCategory ? "Per category" : "Universal"}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Row 1: Category + Position + Generate */}
         <div className="flex flex-wrap items-end gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Category
-            </label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-200 focus:border-green-400 outline-none"
-            >
-              <option value="">Select a category...</option>
-              {CATEGORY_CODES.map((code) => {
-                const cat = CATEGORIES[code];
-                return (
-                  <option key={code} value={code}>
-                    {code} — {cat.name}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+          {/* Category selector — only show when flow type requires it */}
+          {flowDef?.requiresCategory && (
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-200 focus:border-green-400 outline-none"
+              >
+                <option value="">Select a category...</option>
+                {availableCategories.map((code) => {
+                  const cat = CATEGORIES[code as keyof typeof CATEGORIES];
+                  return cat ? (
+                    <option key={code} value={code}>
+                      {code} — {cat.name}
+                    </option>
+                  ) : null;
+                })}
+              </select>
+            </div>
+          )}
 
+          {/* Position selector — dynamically populated from flow type */}
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
               Email Position
@@ -524,8 +705,10 @@ export default function CopyGeneratorPage() {
               onChange={(e) => setSelectedPosition(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-200 focus:border-green-400 outline-none"
             >
-              <option value="ALL">All Positions (E1–E11)</option>
-              {NURTURE_EMAIL_POSITIONS.map((pos) => (
+              <option value="ALL">
+                All Positions ({positionRange}, {totalPositions} emails)
+              </option>
+              {flowDef?.positions.map((pos) => (
                 <option key={pos.position} value={pos.position}>
                   {pos.position} — Day {pos.day}: {pos.purpose}
                 </option>
@@ -535,7 +718,7 @@ export default function CopyGeneratorPage() {
 
           <button
             onClick={handleGenerate}
-            disabled={loading || !selectedCategory}
+            disabled={!canGenerate}
             className="px-6 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
@@ -626,6 +809,16 @@ export default function CopyGeneratorPage() {
           )}
         </div>
 
+        {/* Persistence indicator */}
+        {emails.length > 0 && (
+          <div className="flex items-center gap-2 text-[10px] text-gray-400 pt-2">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Emails auto-saved — they&apos;ll persist across page refreshes
+          </div>
+        )}
+
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             {error}
@@ -642,17 +835,17 @@ export default function CopyGeneratorPage() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
             <p className="text-sm font-medium text-gray-700">
-              Generating AI content — {emails.length} of 11 positions complete
+              Generating AI content — {emails.length} of {totalPositions} positions complete
             </p>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2">
             <div
               className="bg-purple-500 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${(emails.length / 11) * 100}%` }}
+              style={{ width: `${(emails.length / totalPositions) * 100}%` }}
             />
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
-            {NURTURE_EMAIL_POSITIONS.map((pos) => {
+            {flowDef?.positions.map((pos) => {
               const done = emails.some((e) => e.position === pos.position);
               const active = loadingPosition === pos.position;
               return (
@@ -687,7 +880,7 @@ export default function CopyGeneratorPage() {
             </div>
             <div className="bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-center flex-1">
               <p className="text-lg font-bold text-green-700">
-                {emails[0]?.categoryCode}
+                {effectiveCategoryCode}
               </p>
               <p className="text-[10px] text-gray-400">Category</p>
             </div>
@@ -1210,9 +1403,9 @@ export default function CopyGeneratorPage() {
                             <li className="flex gap-3">
                               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">2</span>
                               <div>
-                                <p className="font-medium">Add template to the nurture flow</p>
+                                <p className="font-medium">Add template to the {flowDef?.name || "flow"}</p>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                  Go to <strong>Flows → {email.categoryName} Nurture</strong> → find the{" "}
+                                  Go to <strong>Flows → {flowDef?.name}</strong> → find the{" "}
                                   <strong>{email.position} (Day {email.day})</strong> email action → click &ldquo;Edit Content&rdquo; →
                                   select &ldquo;Saved Templates&rdquo; → choose <strong>{email.templateName}</strong>.
                                 </p>
@@ -1335,9 +1528,9 @@ export default function CopyGeneratorPage() {
             Generate Email Content
           </h3>
           <p className="text-xs text-gray-500 max-w-md mx-auto mb-4">
-            Select a category and email position, then generate AI-powered email
-            content. Each generation creates unique, category-specific content you
-            can edit and customize.
+            Select a flow type{flowDef?.requiresCategory ? ", category," : ""} and email position, then
+            generate AI-powered email content. Each generation creates unique content
+            you can edit and customize. Generated emails are auto-saved.
           </p>
 
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto text-left">
@@ -1351,26 +1544,26 @@ export default function CopyGeneratorPage() {
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs font-semibold text-gray-700">
-                11 Positions
+                10 Flow Types
               </p>
               <p className="text-[10px] text-gray-500">
-                E1–E11, 45-day flow
+                Nurture, cart, winback...
               </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs font-semibold text-gray-700">
-                14 Categories
+                Auto-Saved
               </p>
               <p className="text-[10px] text-gray-500">
-                Full nurture per category
+                Persists across refreshes
               </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs font-semibold text-gray-700">
-                Inline Editor
+                Push to Klaviyo
               </p>
               <p className="text-[10px] text-gray-500">
-                Edit content directly
+                One-click template push
               </p>
             </div>
           </div>

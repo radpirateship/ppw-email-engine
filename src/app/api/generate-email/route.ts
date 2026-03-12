@@ -1,15 +1,19 @@
 // ============================================================================
 // PPW Email Engine — AI Email Content Generator
 // POST /api/generate-email
-// Uses Claude API to generate rich, unique email content for each position
-// in the 45-day nurture flow.
+// Uses Claude API to generate rich, unique email content for any flow type.
 // ============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { CATEGORIES } from "@/framework/categories";
-import { NURTURE_EMAIL_POSITIONS } from "@/framework/content-map";
 import { PRICE_TIERS } from "@/framework/price-tiers";
 import { DEFAULT_STYLE, wrapEmailHtml, getInlineStyleHints } from "@/framework/email-styles";
+import {
+  getFlowType,
+  getTemplateNameForType,
+  FLOW_TYPES,
+  type FlowEmailPosition,
+} from "@/framework/flow-email-positions";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -18,6 +22,7 @@ import { DEFAULT_STYLE, wrapEmailHtml, getInlineStyleHints } from "@/framework/e
 interface GenerateRequest {
   categoryCode: string;
   position: string;
+  flowType?: string; // e.g. "quiz-nurture", "cart-abandon", etc.
   tone?: "professional" | "friendly" | "urgent" | "educational";
   brandVoice?: string;
   additionalContext?: string;
@@ -59,7 +64,6 @@ WRITING RULES:
 - Subject lines: 6-10 words max, create curiosity or urgency
 - Preview text: complement the subject line, don't repeat it
 - Each paragraph should earn its place — cut anything that doesn't add value
-- Use the subscriber's quiz data to personalize meaningfully
 - Include specific product details, not vague descriptions
 
 HTML OUTPUT RULES:
@@ -88,10 +92,41 @@ KLAVIYO VARIABLES AVAILABLE:
 - {{ offer_code }} — discount code (if assigned)
 - {{ offer_amount }} — discount amount
 - {{ consultation_url }} — booking link
+- {{ cart_items }} — cart contents (for abandonment flows)
+- {{ cart_url }} — link back to cart
+- {{ cart_total }} — cart total price
+- {{ product_name }} — browsed/purchased product name
+- {{ product_url }} — browsed/purchased product URL
+- {{ product_image }} — product image URL
+- {{ order_number }} — order number (post-purchase)
+- {{ tracking_url }} — shipping tracking URL
+- {{ review_url }} — product review URL
 - {{ unsubscribe_url }} — unsubscribe link`;
 }
 
+// ---------------------------------------------------------------------------
+// Flow-type-specific prompt context
+// ---------------------------------------------------------------------------
+
+function getFlowContext(flowTypeId: string): string {
+  const contextMap: Record<string, string> = {
+    "quiz-nurture": `This is part of a 45-day nurture sequence for quiz takers. The subscriber has taken a product recommendation quiz and received personalized results. Use quiz data variables ({{ quiz_goal }}, {{ top_recommendation }}, etc.) to personalize the content. Build trust over 11 touchpoints, gradually moving from education to conversion.`,
+    "popup-welcome": `This is a 3-email welcome series for subscribers who signed up via a collection-specific popup. They expressed interest in a specific product category. Deliver the promised discount code in email 1, educate in email 2, and convert in email 3. Keep the series tight and focused on their chosen category.`,
+    "general-welcome": `This is a 3-email welcome series for subscribers who signed up via the main site popup. They haven't indicated a specific product interest yet. Introduce the brand broadly, showcase top categories, and guide them toward the quiz or a consultation. Use {{ first_name|default:"there" }} for personalization.`,
+    "cart-abandon": `This is a cart abandonment recovery series. The subscriber added items to their cart but didn't complete checkout. Use {{ cart_items }}, {{ cart_url }}, and {{ cart_total }} variables. Email 1 is a soft reminder (1hr), Email 2 adds social proof and benefits (24hr), Email 3 creates urgency with an incentive (72hr). Be helpful, not pushy.`,
+    "browse-abandon": `This is a browse abandonment series. The subscriber viewed product pages but didn't add to cart. Use {{ product_name }}, {{ product_url }}, and {{ product_image }}. Email 1 reminds them what they viewed with similar items (2hr delay). Email 2 adds social proof and offers a consultation (48hr). Gentle and informative tone.`,
+    "checkout-abandon": `This is a checkout abandonment recovery series. The subscriber reached checkout but didn't complete the purchase. They were very close to buying. Use {{ cart_items }}, {{ cart_url }}, {{ cart_total }}. Email 1 offers help completing the order (1hr). Email 2 addresses common objections like warranty and financing (24hr). Email 3 uses urgency with a limited-time incentive (72hr).`,
+    "post-purchase": `This is a post-purchase nurture series. The subscriber has completed a purchase. Build loyalty and satisfaction over 6 touchpoints: order confirmation, shipping update, setup guide, check-in, review request, and cross-sell. Use {{ order_number }}, {{ product_name }}, {{ tracking_url }}, {{ review_url }}. Be warm and supportive — they're now a customer.`,
+    "winback": `This is a 90-day winback series for lapsed customers who haven't purchased or engaged recently. Re-establish the relationship with what's new (email 1), provide exclusive value-add content (email 2), and offer a welcome-back incentive (email 3). Acknowledge the gap without guilt-tripping.`,
+    "vip-nurture": `This is a VIP nurture series for high-value customers (multiple purchases or high-ticket orders). Treat them as insiders with exclusive access, early product launches, and dedicated support. Use premium language. These customers already trust the brand — deepen the relationship.`,
+    "sunset": `This is a sunset/cleanup series for unengaged subscribers (no opens/clicks in 60+ days). Email 1 is a re-engagement attempt with a best-content recap. Email 2 is a final notice before removal. Be honest about the situation and give them a clear re-subscribe CTA. Keep it brief and respectful.`,
+  };
+  return contextMap[flowTypeId] || "";
+}
+
 function buildEmailPrompt(
+  flowTypeId: string,
+  flowTypeName: string,
   categoryCode: string,
   categoryName: string,
   position: string,
@@ -104,12 +139,16 @@ function buildEmailPrompt(
   additionalContext: string,
   variationSeed: number
 ): string {
-  // Get price tier context
   const tierInfo = Object.values(PRICE_TIERS)
     .map((t) => `${t.name} ($${t.minPrice}${t.maxPrice ? `-$${t.maxPrice}` : "+"}): ${t.emailStrategy}`)
     .join("\n");
 
-  return `Generate email content for position ${position} (Day ${day}) in the ${categoryName} 45-day nurture flow.
+  const flowContext = getFlowContext(flowTypeId);
+
+  return `Generate email content for position ${position} (Day ${day}) in the ${categoryName} ${flowTypeName}.
+
+FLOW TYPE: ${flowTypeName}
+${flowContext}
 
 EMAIL POSITION: ${position} — Day ${day}
 PURPOSE: ${purpose}
@@ -131,7 +170,7 @@ Please generate:
 3. **htmlBody** — The inner HTML content (NOT wrapped in DOCTYPE/html/body — just the content that goes inside the email template). Must include:
    - Personalized greeting using {{ first_name|default:"there" }}
    - Category-specific content that demonstrates genuine expertise in ${categoryName.toLowerCase()}
-   - Appropriate Klaviyo dynamic variables for this email position
+   - Appropriate Klaviyo dynamic variables for this email position and flow type
    - At least one clear CTA button using <a> with class="cta-btn"
    - Conditional blocks ({% if %}) where appropriate
    - Minimum 200 words of substantive content
@@ -145,10 +184,6 @@ Respond in valid JSON format:
   "plainText": "..."
 }`;
 }
-
-// ---------------------------------------------------------------------------
-// HTML wrapper — now uses centralized email-styles engine
-// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Claude API call
@@ -204,6 +239,7 @@ export async function POST(request: NextRequest) {
     const {
       categoryCode,
       position,
+      flowType: flowTypeId = "quiz-nurture",
       tone = "friendly",
       additionalContext = "",
       variationSeed = Math.floor(Math.random() * 10000),
@@ -218,11 +254,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate position
-    const emailPos = NURTURE_EMAIL_POSITIONS.find((p) => p.position === position);
-    if (!emailPos) {
+    // Validate flow type
+    const flowDef = getFlowType(flowTypeId);
+    if (!flowDef) {
+      const validTypes = FLOW_TYPES.map((ft) => ft.id).join(", ");
       return NextResponse.json(
-        { error: `Invalid position: ${position}. Must be E1-E11.` },
+        { error: `Invalid flow type: ${flowTypeId}. Valid types: ${validTypes}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate position against the flow type
+    const emailPos: FlowEmailPosition | undefined = flowDef.positions.find(
+      (p) => p.position === position
+    );
+    if (!emailPos) {
+      const validPositions = flowDef.positions.map((p) => p.position).join(", ");
+      return NextResponse.json(
+        {
+          error: `Invalid position: ${position} for flow type "${flowDef.name}". Valid positions: ${validPositions}`,
+        },
         { status: 400 }
       );
     }
@@ -230,6 +281,8 @@ export async function POST(request: NextRequest) {
     // Build prompts
     const systemPrompt = buildSystemPrompt();
     const userPrompt = buildEmailPrompt(
+      flowTypeId,
+      flowDef.name,
       categoryCode,
       cat.name,
       position,
@@ -247,7 +300,6 @@ export async function POST(request: NextRequest) {
     const rawResponse = await callClaude(systemPrompt, userPrompt);
 
     // Parse JSON from Claude's response
-    // Claude may wrap in ```json ... ``` so extract that
     let jsonStr = rawResponse;
     const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
@@ -258,7 +310,6 @@ export async function POST(request: NextRequest) {
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      // Try to find JSON object in the response
       const objMatch = rawResponse.match(/\{[\s\S]*"subject"[\s\S]*"plainText"[\s\S]*\}/);
       if (objMatch) {
         parsed = JSON.parse(objMatch[0]);
@@ -270,8 +321,8 @@ export async function POST(request: NextRequest) {
     // Wrap the inner HTML in the full email template using centralized style engine
     const fullHtml = wrapEmailHtml(parsed.htmlBody, parsed.previewText, DEFAULT_STYLE);
 
-    // Build template name using naming convention
-    const templateName = `T-${categoryCode}-Nurture-${position}`;
+    // Build template name using flow-type-aware naming
+    const templateName = getTemplateNameForType(flowTypeId, categoryCode, position);
 
     const result: GeneratedEmail = {
       subject: parsed.subject,
