@@ -383,16 +383,14 @@ ${inner}
             <div style="border-top: 3px solid ${colors.accentColor};"></div>
           </td>
         </tr>
-        <!-- About Us Banner -->
+        <!-- Trust Bar (text-based) -->
         <tr>
-          <td>
-            <img src="${CDN}/d382b76c-e422-48d5-be7e-9bcc01c3feb5.png" alt="About Peak Primal Wellness" style="width: 100%; display: block;">
-          </td>
-        </tr>
-        <!-- Shipping Icons Bar -->
-        <tr>
-          <td>
-            <img src="${CDN}/bb6a8185-f43a-46a0-9fc0-8d3cf5f525e7.png" alt="Free Shipping, Financing, Expert Support" style="width: 100%; display: block;">
+          <td style="background-color: ${colors.ctaPrimary}; padding: 14px ${spacing.contentPadding}px; text-align: center;">
+            <span style="color: #ffffff; font-family: ${fonts.bodyFont}; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">FREE SHIPPING</span>
+            <span style="color: rgba(255,255,255,0.5); margin: 0 10px;">|</span>
+            <span style="color: #ffffff; font-family: ${fonts.bodyFont}; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">FINANCING AVAILABLE</span>
+            <span style="color: rgba(255,255,255,0.5); margin: 0 10px;">|</span>
+            <span style="color: #ffffff; font-family: ${fonts.bodyFont}; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">EXPERT SUPPORT</span>
           </td>
         </tr>
         <!-- Dark Footer -->

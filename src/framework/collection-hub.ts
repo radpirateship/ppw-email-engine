@@ -96,17 +96,24 @@ interface FlowTypeSpec {
 
 const FLOW_MATRIX_SPEC: FlowTypeSpec[] = [
   {
+    key: "collection-popup",
+    label: "Collection Popup",
+    idPattern: "F-{CAT}-Popup",
+    weight: 3, // heaviest — primary email capture mechanism
+    description: "3-email category-specific popup welcome sequence",
+  },
+  {
     key: "welcome-popup",
-    label: "Welcome Popup",
+    label: "Master Welcome Popup",
     idPattern: "F-ALL-Welcome-Popup",
     weight: 1,
-    description: "3-email master welcome sequence",
+    description: "3-email master welcome fallback (non-collection pages)",
   },
   {
     key: "quiz-nurture",
     label: "45-Day Quiz Nurture",
     idPattern: "F-{CAT}-Welcome-Quiz",
-    weight: 3, // heaviest — this is the core collection flow
+    weight: 3, // core collection nurture flow
     description: "11-email, 45-day nurture after quiz completion",
   },
   {
@@ -288,6 +295,17 @@ export function gradeCollection(catCode: string): CollectionReport {
     name: `${category.name} Subscribers List`,
     required: true,
     exists: !!catList,
+  });
+
+  // Collection popup list (primary capture)
+  const popupListId = `L-POP-${catCode}`;
+  const popupList = ALL_LISTS.find((l) => l.id === popupListId);
+  infraItems.push({
+    type: "list",
+    id: popupList ? popupList.id : null,
+    name: `${category.name} Popup Subscribers List`,
+    required: true,
+    exists: !!popupList,
   });
 
   // Quiz list (if category has quiz)

@@ -2,7 +2,7 @@
 // PPW Email Engine — List Architecture
 // ============================================================================
 
-export type ListType = "master" | "category" | "quiz" | "exclusion";
+export type ListType = "master" | "category" | "quiz" | "popup" | "exclusion";
 
 export interface ListDefinition {
   id: string;
@@ -43,7 +43,32 @@ const CATEGORY_LISTS: ListDefinition[] = [
   { id: "L-REC-Subscribers", name: "Recovery Subscribers", type: "category", entryCriteria: "Massage/recovery interest" },
   { id: "L-PIL-Subscribers", name: "Pilates Subscribers", type: "category", entryCriteria: "Pilates equipment interest" },
   { id: "L-GYM-Subscribers", name: "Home Gym Subscribers", type: "category", entryCriteria: "Home gym equipment interest" },
+  { id: "L-CRD-Subscribers", name: "Cardio Subscribers", type: "category", entryCriteria: "Cardio equipment interest" },
+  { id: "L-SPT-Subscribers", name: "Sports Subscribers", type: "category", entryCriteria: "Sports equipment interest" },
+  { id: "L-WEL-Subscribers", name: "Home Wellness Subscribers", type: "category", entryCriteria: "Home wellness product interest" },
+  { id: "L-SDT-Subscribers", name: "Float Tank Subscribers", type: "category", entryCriteria: "Float/sensory deprivation interest" },
   // Add new category lists above this line
+];
+
+// ---------------------------------------------------------------------------
+// Collection Popup Lists (primary email capture)
+// ---------------------------------------------------------------------------
+const POPUP_LISTS: ListDefinition[] = [
+  { id: "L-POP-SAU", name: "Sauna Popup Subscribers", type: "popup", entryCriteria: "Subscribed via sauna collection popup" },
+  { id: "L-POP-HTR", name: "Sauna Heater Popup Subscribers", type: "popup", entryCriteria: "Subscribed via sauna heater collection popup" },
+  { id: "L-POP-CLD", name: "Cold Plunge Popup Subscribers", type: "popup", entryCriteria: "Subscribed via cold plunge collection popup" },
+  { id: "L-POP-RLT", name: "Red Light Popup Subscribers", type: "popup", entryCriteria: "Subscribed via red light therapy collection popup" },
+  { id: "L-POP-HYP", name: "Hyperbaric Popup Subscribers", type: "popup", entryCriteria: "Subscribed via hyperbaric collection popup" },
+  { id: "L-POP-H2O", name: "Hydrogen Water Popup Subscribers", type: "popup", entryCriteria: "Subscribed via hydrogen water collection popup" },
+  { id: "L-POP-ION", name: "Water Ionizer Popup Subscribers", type: "popup", entryCriteria: "Subscribed via water ionizer collection popup" },
+  { id: "L-POP-REC", name: "Recovery Popup Subscribers", type: "popup", entryCriteria: "Subscribed via recovery collection popup" },
+  { id: "L-POP-PIL", name: "Pilates Popup Subscribers", type: "popup", entryCriteria: "Subscribed via pilates collection popup" },
+  { id: "L-POP-GYM", name: "Home Gym Popup Subscribers", type: "popup", entryCriteria: "Subscribed via home gym collection popup" },
+  { id: "L-POP-CRD", name: "Cardio Popup Subscribers", type: "popup", entryCriteria: "Subscribed via cardio collection popup" },
+  { id: "L-POP-SPT", name: "Sports Popup Subscribers", type: "popup", entryCriteria: "Subscribed via sports collection popup" },
+  { id: "L-POP-WEL", name: "Home Wellness Popup Subscribers", type: "popup", entryCriteria: "Subscribed via home wellness collection popup" },
+  { id: "L-POP-SDT", name: "Float Tank Popup Subscribers", type: "popup", entryCriteria: "Subscribed via float tank collection popup" },
+  // Add new popup lists above this line
 ];
 
 // ---------------------------------------------------------------------------
@@ -73,6 +98,7 @@ const EXCLUSION_LISTS: ListDefinition[] = [
 export const ALL_LISTS: ListDefinition[] = [
   ...MASTER_LISTS,
   ...CATEGORY_LISTS,
+  ...POPUP_LISTS,
   ...QUIZ_LISTS,
   ...EXCLUSION_LISTS,
 ];

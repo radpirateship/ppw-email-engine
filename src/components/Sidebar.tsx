@@ -170,7 +170,7 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-sm font-bold text-gray-900 leading-tight">PPW Email Engine</h1>
-            <p className="text-[10px] text-gray-400 leading-tight">v0.15.0 \u00b7 Phase 15</p>
+            <p className="text-[10px] text-gray-400 leading-tight">v0.16.0 \u00b7 Phase 16</p>
           </div>
         </div>
       </div>

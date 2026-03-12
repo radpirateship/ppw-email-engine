@@ -6,10 +6,22 @@ import Link from "next/link";
 
 const FEATURES = [
   {
+    name: "Collection Hub",
+    status: "active" as const,
+    description: "Pick a collection, see its full flow matrix graded A-F, and navigate directly to fill gaps.",
+    href: "/collections",
+  },
+  {
     name: "Email Copy Generator",
     status: "active" as const,
     description: "Generate Klaviyo-ready email copy with dynamic tags and conditional blocks.",
     href: "/copy-generator",
+  },
+  {
+    name: "Flow Builder / Status Dashboard",
+    status: "active" as const,
+    description: "Track all flows by category, status, and email completion.",
+    href: "/flow-builder",
   },
   {
     name: "Content-to-Email Pipeline",
@@ -18,10 +30,16 @@ const FEATURES = [
     href: "/pipeline",
   },
   {
-    name: "Flow Builder / Status Dashboard",
+    name: "Campaign Calendar",
     status: "active" as const,
-    description: "Track all flows by category, status, and email completion.",
-    href: "/flow-builder",
+    description: "2026 campaign plan — newsletters, seasonal promos, flash sales, cross-sells, and winbacks.",
+    href: "/campaigns",
+  },
+  {
+    name: "Kanban Board",
+    status: "active" as const,
+    description: "Drag-and-drop task board for tracking implementation across backlog, todo, in-progress, and done.",
+    href: "/kanban",
   },
   {
     name: "Klaviyo Sync Layer",
@@ -36,28 +54,16 @@ const FEATURES = [
     href: "/klaviyo/delta",
   },
   {
-    name: "Framework Knowledge Base",
-    status: "active" as const,
-    description: "Naming conventions, tags, categories, and flow architecture.",
-    href: "/framework",
-  },
-  {
-    name: "Product Recommendation Engine",
-    status: "active" as const,
-    description: "Product-to-quiz mapping across categories and price tiers.",
-    href: "/recommendations",
-  },
-  {
     name: "Template Manager",
     status: "active" as const,
     description: "Preview, validate, and push email templates to Klaviyo across all categories.",
     href: "/klaviyo/templates",
   },
   {
-    name: "Campaign Calendar",
+    name: "Product Recommendation Engine",
     status: "active" as const,
-    description: "2026 campaign plan — newsletters, seasonal promos, flash sales, cross-sells, and winbacks.",
-    href: "/campaigns",
+    description: "Product-to-quiz mapping across categories and price tiers.",
+    href: "/recommendations",
   },
   {
     name: "Category Completion Tracker",
@@ -72,15 +78,21 @@ const FEATURES = [
     href: "/style-editor",
   },
   {
+    name: "Framework Knowledge Base",
+    status: "active" as const,
+    description: "Naming conventions, tags, categories, and flow architecture.",
+    href: "/framework",
+  },
+  {
     name: "Category Propagator",
     status: "active" as const,
-    description: "Add new product categories and auto-generate all framework files — lists, segments, flows, and templates.",
+    description: "Add new product categories and auto-generate all framework files.",
     href: "/propagate",
   },
   {
     name: "Onboarding Education Center",
     status: "active" as const,
-    description: "Guided implementation checklist — 26 steps across 4 phases with progress tracking and milestones.",
+    description: "Guided implementation checklist — 26 steps across 4 phases with progress tracking.",
     href: "/onboarding",
   },
 ];
@@ -152,7 +164,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.13.0 &middot; Phase 13: Onboarding Education Center
+        PPW Email Engine v0.16.0 &middot; Phase 16: Collection Popups &amp; Consolidation
       </div>
     </div>
   );
