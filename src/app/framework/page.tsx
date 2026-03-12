@@ -19,8 +19,6 @@ import {
   ENGAGEMENT_TAGS,
   LIFECYCLE_TAGS,
   BRAND_TAGS,
-  NURTURE_EMAIL_POSITIONS,
-  CATEGORY_CONTENT,
 } from "@/framework";
 
 // ============================================================================
@@ -34,7 +32,6 @@ const TABS = [
   { id: "tags", label: "Tags", count: ALL_TAGS.length },
   { id: "tiers", label: "Price Tiers", count: TIER_IDS.length },
   { id: "naming", label: "Naming", count: Object.keys(ASSET_PREFIXES).length },
-  { id: "content", label: "Content Map", count: NURTURE_EMAIL_POSITIONS.length },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -398,75 +395,6 @@ function NamingPanel() {
   );
 }
 
-function ContentMapPanel() {
-  return (
-    <div className="space-y-6">
-      {/* 45-day timeline */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">45-Day Nurture Flow Timeline</h3>
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Position</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Day</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Content Type</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Purpose</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {NURTURE_EMAIL_POSITIONS.map((pos) => (
-                <tr key={pos.position} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded">{pos.position}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center font-semibold text-gray-700">Day {pos.day}</td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                      {pos.contentType}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{pos.purpose}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Category content inventory */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Content Inventory by Category</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {CATEGORY_CONTENT.map((cat) => {
-            const barWidth = Math.round((cat.articleCount / 80) * 100);
-            return (
-              <div key={cat.categoryCode} className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded">
-                      {cat.categoryCode}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900">{cat.pillarContent}</span>
-                  </div>
-                  <span className="text-xs font-bold text-gray-700">{cat.articleCount}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
-                  <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${barWidth}%` }} />
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {cat.contentAreas.map((area, i) => (
-                    <span key={i} className="text-[10px] text-gray-500">{area}{i < cat.contentAreas.length - 1 ? " Â· " : ""}</span>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ============================================================================
 // Main Page Component
@@ -483,7 +411,6 @@ export default function FrameworkPage() {
       case "tags": return <TagsPanel />;
       case "tiers": return <TiersPanel />;
       case "naming": return <NamingPanel />;
-      case "content": return <ContentMapPanel />;
     }
   };
 
@@ -493,7 +420,7 @@ export default function FrameworkPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Framework Knowledge Base</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Browse naming conventions, tags, categories, flows, segments, lists, price tiers, and the content map.
+          Browse naming conventions, tags, categories, flows, segments, lists, and price tiers.
         </p>
       </div>
 

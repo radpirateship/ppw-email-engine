@@ -42,16 +42,10 @@ const FEATURES = [
     href: "/kanban",
   },
   {
-    name: "Klaviyo Sync Layer",
+    name: "Klaviyo Dashboard",
     status: "active" as const,
-    description: "Live Klaviyo state — flows, lists, segments, metrics, health score.",
+    description: "Live Klaviyo state and gap analysis — flows, lists, segments, metrics, and per-category readiness.",
     href: "/klaviyo",
-  },
-  {
-    name: "Klaviyo Delta Dashboard",
-    status: "active" as const,
-    description: "Gap analysis — framework expectations vs live Klaviyo state, per-category readiness.",
-    href: "/klaviyo/delta",
   },
   {
     name: "Template Manager",
@@ -64,12 +58,6 @@ const FEATURES = [
     status: "active" as const,
     description: "Product-to-quiz mapping across categories and price tiers.",
     href: "/recommendations",
-  },
-  {
-    name: "Category Completion Tracker",
-    status: "active" as const,
-    description: "Bird's-eye view of email marketing readiness per category.",
-    href: "/completion",
   },
   {
     name: "Email Style Editor",
@@ -164,7 +152,7 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-        PPW Email Engine v0.16.0 &middot; Phase 16: Collection Popups &amp; Consolidation
+        PPW Email Engine v0.17.0 &middot; Phase 17: Section Consolidation
       </div>
     </div>
   );

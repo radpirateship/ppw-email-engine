@@ -15,6 +15,10 @@ import {
 } from "@/framework/collection-hub";
 import { CATEGORIES, CATEGORY_CODES } from "@/framework/categories";
 import type { FlowStatus } from "@/framework/flows";
+import {
+  computeAllCompletions,
+  computeOverallReadiness,
+} from "@/framework/completion";
 
 // ============================================================================
 // Grade Colors & Helpers
@@ -119,6 +123,116 @@ function ScoreMiniBar({ label, score }: { label: string; score: number }) {
         />
       </div>
       <span className="text-[10px] font-medium text-gray-500 w-8">{score}%</span>
+    </div>
+  );
+}
+
+// ============================================================================
+// Readiness Metrics (from Completion)
+// ============================================================================
+
+const TIER_BAR_COLORS: Record<string, string> = {
+  "not-started": "bg-gray-300",
+  beginning: "bg-red-400",
+  building: "bg-yellow-400",
+  established: "bg-blue-500",
+  advanced: "bg-green-500",
+};
+
+const TIER_LABELS: Record<string, string> = {
+  "not-started": "Not Started",
+  beginning: "Beginning",
+  building: "Building",
+  established: "Established",
+  advanced: "Advanced",
+};
+
+function readinessScoreColor(score: number): string {
+  if (score === 0) return "text-gray-400";
+  if (score < 25) return "text-red-600";
+  if (score < 50) return "text-yellow-600";
+  if (score < 75) return "text-blue-600";
+  return "text-green-600";
+}
+
+function ReadinessPanel() {
+  const allCompletions = computeAllCompletions();
+  const readiness = computeOverallReadiness(allCompletions);
+  const total = allCompletions.length;
+  const tiers = ["advanced", "established", "building", "beginning", "not-started"] as const;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        Readiness Overview
+      </h3>
+      {/* Metric cards */}
+      <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Overall</div>
+          <div className={`text-2xl font-bold ${readinessScoreColor(readiness.averageScore)}`}>
+            {readiness.averageScore}%
+          </div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Flows Live</div>
+          <div className="text-xl font-bold text-gray-900">
+            {readiness.flowsLive}
+            <span className="text-xs font-normal text-gray-400"> / {readiness.flowsPlanned}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+            <div className="bg-green-500 h-1 rounded-full" style={{ width: `${readiness.flowsPlanned > 0 ? Math.round((readiness.flowsLive / readiness.flowsPlanned) * 100) : 0}%` }} />
+          </div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Lists</div>
+          <div className="text-xl font-bold text-gray-900">
+            {readiness.listsExist}
+            <span className="text-xs font-normal text-gray-400"> / {readiness.listsPlanned}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+            <div className="bg-green-500 h-1 rounded-full" style={{ width: `${readiness.listsPlanned > 0 ? Math.round((readiness.listsExist / readiness.listsPlanned) * 100) : 0}%` }} />
+          </div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Segments</div>
+          <div className="text-xl font-bold text-gray-900">
+            {readiness.segmentsExist}
+            <span className="text-xs font-normal text-gray-400"> / {readiness.segmentsPlanned}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+            <div className="bg-green-500 h-1 rounded-full" style={{ width: `${readiness.segmentsPlanned > 0 ? Math.round((readiness.segmentsExist / readiness.segmentsPlanned) * 100) : 0}%` }} />
+          </div>
+        </div>
+      </div>
+      {/* Tier distribution bar */}
+      <div className="flex rounded-full overflow-hidden h-3 mb-2">
+        {tiers.map((tier) => {
+          const count = readiness.tierCounts[tier] || 0;
+          if (count === 0) return null;
+          return (
+            <div
+              key={tier}
+              className={`${TIER_BAR_COLORS[tier]} transition-all`}
+              style={{ width: `${(count / total) * 100}%` }}
+              title={`${TIER_LABELS[tier]}: ${count}`}
+            />
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-3 text-[10px]">
+        {tiers.map((tier) => {
+          const count = readiness.tierCounts[tier] || 0;
+          return (
+            <div key={tier} className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${TIER_BAR_COLORS[tier]}`} />
+              <span className="text-gray-500">
+                {TIER_LABELS[tier]}: <span className="font-semibold">{count}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -810,8 +924,13 @@ export default function CollectionsPage() {
         )}
       </div>
 
-      {/* System summary (only in grid view) */}
-      {!selectedCat && <SystemSummary report={systemReport} />}
+      {/* System summary + readiness (only in grid view) */}
+      {!selectedCat && (
+        <>
+          <SystemSummary report={systemReport} />
+          <ReadinessPanel />
+        </>
+      )}
 
       {/* Grid or Detail */}
       {selectedCat && selectedReport ? (
