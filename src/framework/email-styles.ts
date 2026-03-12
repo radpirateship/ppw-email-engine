@@ -108,32 +108,32 @@ export interface EmailStyleConfig {
 // ---------------------------------------------------------------------------
 
 export const DEFAULT_COLORS: EmailColorScheme = {
-  headerBg: "#1a5632",
+  headerBg: "#0A86CB",      // Blue greeting bar
   headerText: "#ffffff",
-  ctaPrimary: "#2d8a4e",
+  ctaPrimary: "#001A5C",    // Dark navy — ALL CTA buttons
   ctaPrimaryText: "#ffffff",
-  ctaSecondary: "#555555",
+  ctaSecondary: "#0A86CB",  // Blue secondary buttons
   ctaSecondaryText: "#ffffff",
-  headingColor: "#1a5632",
-  bodyText: "#555555",
+  headingColor: "#09195B",  // Dark navy for headings
+  bodyText: "#000000",      // Primary body copy
   mutedText: "#999999",
-  emailBg: "#f4f4f4",
-  contentBg: "#ffffff",
-  footerBg: "#f8f8f8",
-  footerText: "#999999",
-  linkColor: "#2d8a4e",
-  borderColor: "#e5e5e5",
-  accentColor: "#2d8a4e",
+  emailBg: "#FAFAFD",       // Outer wrapper background
+  contentBg: "#ffffff",     // Inner content area
+  footerBg: "#15191E",      // Dark footer
+  footerText: "#ffffff",    // White text on dark footer
+  linkColor: "#0015D2",     // All hyperlinks
+  borderColor: "#F5F5F5",   // Product card borders (4px solid)
+  accentColor: "#001A5C",   // Footer divider accent
 };
 
 export const DEFAULT_FONTS: EmailFontConfig = {
-  headingFont: "'Helvetica Neue', Arial, sans-serif",
-  bodyFont: "'Helvetica Neue', Arial, sans-serif",
-  headingSize: 22,
-  subheadingSize: 18,
-  bodySize: 15,
-  smallSize: 12,
-  lineHeight: 1.6,
+  headingFont: "Poppins, Helvetica, Arial, sans-serif",
+  bodyFont: "Poppins, Helvetica, Arial, sans-serif",
+  headingSize: 24,
+  subheadingSize: 20,
+  bodySize: 18,
+  smallSize: 13,
+  lineHeight: 1.3,
   headingWeight: 600,
 };
 
@@ -141,9 +141,9 @@ export const DEFAULT_SPACING: EmailSpacingConfig = {
   headerPadding: 24,
   contentPadding: 32,
   footerPadding: 24,
-  ctaPaddingV: 14,
+  ctaPaddingV: 18,
   ctaPaddingH: 32,
-  ctaRadius: 6,
+  ctaRadius: 8,
   cardRadius: 8,
   maxWidth: 600,
   sectionGap: 16,
@@ -151,7 +151,7 @@ export const DEFAULT_SPACING: EmailSpacingConfig = {
 
 export const DEFAULT_STYLE: EmailStyleConfig = {
   name: "PPW Default",
-  description: "The original Peak Primal Wellness email style — clean green and white with warm professionalism.",
+  description: "The official Peak Primal Wellness email style — navy and blue with Poppins typography.",
   colors: DEFAULT_COLORS,
   fonts: DEFAULT_FONTS,
   spacing: DEFAULT_SPACING,
@@ -337,11 +337,10 @@ export function wrapEmailHtml(
   style: EmailStyleConfig = DEFAULT_STYLE
 ): string {
   const css = generateEmailCSS(style);
-  const { colors } = style;
+  const { colors, fonts, spacing } = style;
 
-  const logoHtml = style.logoUrl
-    ? `<img src="${style.logoUrl}" alt="Peak Primal Wellness" style="max-width: ${style.logoMaxWidth || 180}px;">`
-    : "";
+  // CDN base for PPW email assets
+  const CDN = "https://d3k81ch9hvuctc.cloudfront.net/company/RbmCvX/images";
 
   return `<!DOCTYPE html>
 <html>
@@ -349,25 +348,75 @@ export function wrapEmailHtml(
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Peak Primal Wellness</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>${css}
   </style>
 </head>
 <body>
   <div class="preheader">${preheader}</div>
-  <div class="wrapper">
-    <div class="header">
-      ${logoHtml}
-      <h1>Peak Primal Wellness</h1>
-    </div>
-    <div class="content">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${colors.emailBg};">
+    <tr><td align="center">
+      <table width="${spacing.maxWidth}" cellpadding="0" cellspacing="0" style="background-color: ${colors.contentBg};">
+        <!-- PPW Logo Header -->
+        <tr>
+          <td align="center" style="padding: 20px 0;">
+            <img src="${CDN}/5280fb0b-a7f1-436b-9e03-bfb782aa83e7.png" alt="Peak Primal Wellness" style="max-width: 200px;">
+          </td>
+        </tr>
+        <!-- Blue Greeting Bar -->
+        <tr>
+          <td style="background-color: ${colors.headerBg}; padding: 16px ${spacing.contentPadding}px; text-align: center;">
+            <p style="color: ${colors.headerText}; font-family: ${fonts.headingFont}; font-size: 20px; font-weight: 700; margin: 0;">
+              Hey {{ person.first_name|default:'friend' }}, welcome!
+            </p>
+          </td>
+        </tr>
+        <!-- Main Content Area -->
+        <tr>
+          <td style="padding: ${spacing.contentPadding}px;">
 ${inner}
-    </div>
-    <div class="footer">
-      <p>Peak Primal Wellness &middot; Your Home Wellness Experts</p>
-      <p><a href="{{ consultation_url }}">Schedule a Free Consultation</a> &middot; <a href="{{ unsubscribe_url }}">Unsubscribe</a></p>
-      <p style="font-size: 10px; color: ${colors.mutedText};">You're receiving this because you signed up at peakprimalwellness.com</p>
-    </div>
-  </div>
+          </td>
+        </tr>
+        <!-- Footer Divider -->
+        <tr>
+          <td style="padding: 0 ${spacing.contentPadding}px;">
+            <div style="border-top: 3px solid ${colors.accentColor};"></div>
+          </td>
+        </tr>
+        <!-- About Us Banner -->
+        <tr>
+          <td>
+            <img src="${CDN}/d382b76c-e422-48d5-be7e-9bcc01c3feb5.png" alt="About Peak Primal Wellness" style="width: 100%; display: block;">
+          </td>
+        </tr>
+        <!-- Shipping Icons Bar -->
+        <tr>
+          <td>
+            <img src="${CDN}/bb6a8185-f43a-46a0-9fc0-8d3cf5f525e7.png" alt="Free Shipping, Financing, Expert Support" style="width: 100%; display: block;">
+          </td>
+        </tr>
+        <!-- Dark Footer -->
+        <tr>
+          <td style="background-color: ${colors.footerBg}; padding: ${spacing.footerPadding}px ${spacing.contentPadding}px; text-align: center;">
+            <img src="${CDN}/15c904eb-7090-4dfc-918d-90c86d74542c.png" alt="Peak Primal Wellness" style="max-width: 150px; margin-bottom: 12px;">
+            <p style="color: ${colors.footerText}; font-family: ${fonts.bodyFont}; font-size: 14px; margin: 8px 0;">(877) 689-4898</p>
+            <p style="color: ${colors.footerText}; font-family: ${fonts.bodyFont}; font-size: 14px; margin: 8px 0;">info@peakprimalwellness.com</p>
+            <p style="margin: 12px 0;">
+              <a href="#" style="color: ${colors.footerText}; font-size: 13px; text-decoration: none; font-family: ${fonts.bodyFont};">About Us</a>
+              &nbsp;|&nbsp;
+              <a href="#" style="color: ${colors.footerText}; font-size: 13px; text-decoration: none; font-family: ${fonts.bodyFont};">Privacy Policy</a>
+              &nbsp;|&nbsp;
+              <a href="#" style="color: ${colors.footerText}; font-size: 13px; text-decoration: none; font-family: ${fonts.bodyFont};">Payment Policy</a>
+            </p>
+            <img src="${CDN}/14e60c51-6404-40b5-916f-71033b10490c.png" alt="Payment Methods" style="max-width: 450px; margin: 12px 0;">
+            <p style="margin: 12px 0;">
+              <a href="{% unsubscribe %}" style="color: ${colors.footerText}; font-size: 12px; text-decoration: underline; font-family: ${fonts.bodyFont};">Unsubscribe</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>`;
 }

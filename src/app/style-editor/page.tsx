@@ -91,6 +91,7 @@ const COLOR_FIELDS: { key: keyof EmailColorScheme; label: string; group: string 
 ];
 
 const FONT_OPTIONS = [
+  "Poppins, Helvetica, Arial, sans-serif",
   "'Helvetica Neue', Arial, sans-serif",
   "Arial, sans-serif",
   "Georgia, 'Times New Roman', serif",
@@ -100,6 +101,7 @@ const FONT_OPTIONS = [
 ];
 
 const FONT_DISPLAY_NAMES: Record<string, string> = {
+  "Poppins, Helvetica, Arial, sans-serif": "Poppins (PPW Brand)",
   "'Helvetica Neue', Arial, sans-serif": "Helvetica Neue",
   "Arial, sans-serif": "Arial",
   "Georgia, 'Times New Roman', serif": "Georgia (Serif)",
