@@ -421,12 +421,12 @@ export function mergeWithAutoTasks(savedTasks: KanbanTask[]): KanbanTask[] {
   }
 
   // Add remaining manual tasks
-  for (const [, task] of savedById) {
+  savedById.forEach((task) => {
     if (task.source === "manual") {
       merged.push(task);
     }
     // Orphaned auto tasks (from removed flows) are dropped
-  }
+  });
 
   return merged;
 }
