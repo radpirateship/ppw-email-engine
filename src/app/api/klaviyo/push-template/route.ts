@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         );
 
     // Call Klaviyo API to create email template
-    const klaviyoRes = await fetch("https://a.klaviyo.com/api/email-templates/", {
+    const klaviyoRes = await fetch("https://a.klaviyo.com/api/templates/", {
       method: "POST",
       headers: {
         Authorization: `Klaviyo-API-Key ${KLAVIYO_API_KEY}`,
