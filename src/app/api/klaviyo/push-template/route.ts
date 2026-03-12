@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
           type: "template",
           attributes: {
             name: body.name,
+            editor_type: "CODE",
             html: htmlWithUnsubscribe,
           },
         },
