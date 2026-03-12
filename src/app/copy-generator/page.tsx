@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   CATEGORIES,
   CATEGORY_CODES,
@@ -8,6 +8,19 @@ import {
 import {
   NURTURE_EMAIL_POSITIONS,
 } from "@/framework/content-map";
+import {
+  loadPushRecords,
+  savePushRecord,
+  markPushRecordLive,
+  type StoredPushRecord,
+} from "@/framework/template-push-store";
+import {
+  saveOverride,
+} from "@/framework/collection-hub";
+import {
+  loadKanbanTasks,
+  saveKanbanTasks,
+} from "@/framework/kanban";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,6 +76,15 @@ interface DisplayEmail {
   isAI: boolean;
 }
 
+type PushState = "idle" | "pushing" | "pushed" | "error";
+
+interface PushStatus {
+  state: PushState;
+  klaviyoTemplateId?: string;
+  editUrl?: string;
+  error?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -94,6 +116,16 @@ export default function CopyGeneratorPage() {
   const [editedHtml, setEditedHtml] = useState<Record<string, string>>({});
   const [editedPlainText, setEditedPlainText] = useState<Record<string, string>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Klaviyo push state (per position)
+  const [pushStatuses, setPushStatuses] = useState<Record<string, PushStatus>>({});
+  const [pushRecords, setPushRecords] = useState<StoredPushRecord[]>([]);
+  const [showInstructions, setShowInstructions] = useState<string | null>(null);
+
+  // Load push records on mount
+  useEffect(() => {
+    setPushRecords(loadPushRecords());
+  }, []);
 
   // -------------------------------------------------------------------------
   // AI Generation (single position)
@@ -278,6 +310,129 @@ export default function CopyGeneratorPage() {
     } finally {
       setLoadingPosition(null);
     }
+  };
+
+  // -------------------------------------------------------------------------
+  // Push to Klaviyo handler
+  // -------------------------------------------------------------------------
+
+  const handlePushToKlaviyo = async (email: DisplayEmail) => {
+    const key = email.position;
+    setPushStatuses((prev) => ({
+      ...prev,
+      [key]: { state: "pushing" },
+    }));
+
+    try {
+      const res = await fetch("/api/klaviyo/push-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: email.templateName,
+          html: getHtml(email),
+          categoryCode: email.categoryCode,
+          position: email.position,
+          subject: getSubject(email),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPushStatuses((prev) => ({
+          ...prev,
+          [key]: {
+            state: "error",
+            error: data.error || "Push failed",
+          },
+        }));
+        return;
+      }
+
+      // Save push record to localStorage
+      const record: StoredPushRecord = {
+        templateName: email.templateName,
+        categoryCode: email.categoryCode,
+        position: email.position,
+        subject: getSubject(email),
+        klaviyoTemplateId: data.klaviyoTemplateId,
+        editUrl: data.editUrl,
+        status: "pushed",
+        pushedAt: data.pushedAt,
+      };
+      savePushRecord(record);
+      setPushRecords(loadPushRecords());
+
+      setPushStatuses((prev) => ({
+        ...prev,
+        [key]: {
+          state: "pushed",
+          klaviyoTemplateId: data.klaviyoTemplateId,
+          editUrl: data.editUrl,
+        },
+      }));
+
+      // Show instructions automatically
+      setShowInstructions(key);
+    } catch (err) {
+      setPushStatuses((prev) => ({
+        ...prev,
+        [key]: {
+          state: "error",
+          error: err instanceof Error ? err.message : "Network error",
+        },
+      }));
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Mark as Live — updates flow status, kanban, and push record
+  // -------------------------------------------------------------------------
+
+  const handleMarkAsLive = (email: DisplayEmail) => {
+    // 1. Update push record
+    markPushRecordLive(email.categoryCode, email.position);
+    setPushRecords(loadPushRecords());
+
+    // 2. Update flow status override (marks the nurture flow as "built" or "live")
+    // The flow ID pattern for nurture flows: F-[CAT]-Nurture
+    const flowId = `F-${email.categoryCode}-Nurture`;
+    saveOverride(flowId, "live");
+
+    // 3. Move related kanban tasks to "done"
+    try {
+      const tasks = loadKanbanTasks();
+      const updated = tasks.map((t) => {
+        // Match tasks related to this category's nurture flow
+        if (
+          t.category === email.categoryCode &&
+          (t.id.includes("nurture") || t.id.includes("Nurture")) &&
+          t.column !== "done"
+        ) {
+          return { ...t, column: "done" as const };
+        }
+        return t;
+      });
+      saveKanbanTasks(updated);
+    } catch {
+      // Kanban update is best-effort
+    }
+
+    // 4. Update the push status display
+    setPushStatuses((prev) => ({
+      ...prev,
+      [email.position]: {
+        ...prev[email.position],
+        state: "pushed", // Keep as pushed, the record itself tracks "live"
+      },
+    }));
+  };
+
+  // Check if a position was already pushed (from localStorage)
+  const getExistingPush = (categoryCode: string, position: string) => {
+    return pushRecords.find(
+      (r) => r.categoryCode === categoryCode && r.position === position
+    );
   };
 
   // -------------------------------------------------------------------------
@@ -843,6 +998,70 @@ export default function CopyGeneratorPage() {
 
                       {/* Actions */}
                       <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap gap-2">
+                        {/* Push to Klaviyo — primary action */}
+                        {(() => {
+                          const ps = pushStatuses[email.position];
+                          const existing = getExistingPush(email.categoryCode, email.position);
+                          const isPushing = ps?.state === "pushing";
+                          const wasPushed = ps?.state === "pushed" || existing;
+
+                          return (
+                            <button
+                              onClick={() => handlePushToKlaviyo(email)}
+                              disabled={isPushing}
+                              className={`px-4 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
+                                wasPushed
+                                  ? "text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100"
+                                  : "text-white bg-blue-600 hover:bg-blue-700"
+                              } disabled:opacity-50`}
+                            >
+                              {isPushing ? (
+                                <>
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                  </svg>
+                                  Pushing to Klaviyo...
+                                </>
+                              ) : wasPushed ? (
+                                <>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Re-push to Klaviyo
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                  </svg>
+                                  Push to Klaviyo
+                                </>
+                              )}
+                            </button>
+                          );
+                        })()}
+
+                        {/* View Setup Instructions */}
+                        {(pushStatuses[email.position]?.state === "pushed" ||
+                          getExistingPush(email.categoryCode, email.position)) && (
+                          <button
+                            onClick={() =>
+                              setShowInstructions(
+                                showInstructions === email.position
+                                  ? null
+                                  : email.position
+                              )
+                            }
+                            className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors flex items-center gap-1.5"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            {showInstructions === email.position ? "Hide" : "Setup"} Instructions
+                          </button>
+                        )}
+
                         {/* Regenerate (AI only) */}
                         {useAI && (
                           <button
@@ -852,43 +1071,18 @@ export default function CopyGeneratorPage() {
                           >
                             {isRegenerating ? (
                               <>
-                                <svg
-                                  className="animate-spin h-3 w-3"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="none"
-                                  />
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                                  />
+                                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                 </svg>
                                 Regenerating...
                               </>
                             ) : (
                               <>
-                                <svg
-                                  className="w-3 h-3"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                  />
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
-                                Regenerate (New Variation)
+                                Regenerate
                               </>
                             )}
                           </button>
@@ -896,48 +1090,23 @@ export default function CopyGeneratorPage() {
 
                         <button
                           onClick={() =>
-                            copyToClipboard(
-                              getSubject(email),
-                              `actsubject-${email.position}`
-                            )
+                            copyToClipboard(getHtml(email), `acthtml-${email.position}`)
                           }
                           className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                         >
-                          {copiedField === `actsubject-${email.position}`
-                            ? "Copied!"
-                            : "Copy Subject"}
+                          {copiedField === `acthtml-${email.position}` ? "Copied!" : "Copy HTML"}
                         </button>
                         <button
                           onClick={() =>
-                            copyToClipboard(
-                              getHtml(email),
-                              `acthtml-${email.position}`
-                            )
+                            copyToClipboard(getSubject(email), `actsubject-${email.position}`)
                           }
                           className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                         >
-                          {copiedField === `acthtml-${email.position}`
-                            ? "Copied!"
-                            : "Copy HTML"}
-                        </button>
-                        <button
-                          onClick={() =>
-                            copyToClipboard(
-                              getPlainText(email),
-                              `acttext-${email.position}`
-                            )
-                          }
-                          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                        >
-                          {copiedField === `acttext-${email.position}`
-                            ? "Copied!"
-                            : "Copy Plain Text"}
+                          {copiedField === `actsubject-${email.position}` ? "Copied!" : "Copy Subject"}
                         </button>
                         <button
                           onClick={() => {
-                            const blob = new Blob([getHtml(email)], {
-                              type: "text/html",
-                            });
+                            const blob = new Blob([getHtml(email)], { type: "text/html" });
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement("a");
                             a.href = url;
@@ -981,6 +1150,149 @@ export default function CopyGeneratorPage() {
                           </button>
                         )}
                       </div>
+
+                      {/* Push error */}
+                      {pushStatuses[email.position]?.state === "error" && (
+                        <div className="px-5 py-3 border-t border-red-100 bg-red-50">
+                          <p className="text-xs text-red-700 font-medium">
+                            Push failed: {pushStatuses[email.position]?.error}
+                          </p>
+                          <p className="text-[10px] text-red-500 mt-1">
+                            Make sure KLAVIYO_PRIVATE_API_KEY is set in your Vercel environment variables.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Post-Push Instructions Panel */}
+                      {showInstructions === email.position && (
+                        <div className="px-5 py-4 border-t border-blue-100 bg-gradient-to-b from-blue-50 to-white">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                            </div>
+                            <h4 className="text-sm font-bold text-gray-900">
+                              Klaviyo Setup Instructions
+                            </h4>
+                          </div>
+
+                          {/* Klaviyo Template Link */}
+                          {(() => {
+                            const ps = pushStatuses[email.position];
+                            const existing = getExistingPush(email.categoryCode, email.position);
+                            const editUrl = ps?.editUrl || existing?.editUrl;
+                            const templateId = ps?.klaviyoTemplateId || existing?.klaviyoTemplateId;
+
+                            return editUrl ? (
+                              <a
+                                href={editUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 mb-4 bg-white border border-blue-200 rounded-lg text-sm text-blue-700 font-medium hover:bg-blue-50 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Open Template in Klaviyo ({templateId})
+                              </a>
+                            ) : null;
+                          })()}
+
+                          <ol className="space-y-3 text-sm text-gray-700">
+                            <li className="flex gap-3">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">1</span>
+                              <div>
+                                <p className="font-medium">Open the template in Klaviyo</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Click the link above to review and make any final edits in the Klaviyo editor.</p>
+                              </div>
+                            </li>
+                            <li className="flex gap-3">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">2</span>
+                              <div>
+                                <p className="font-medium">Add template to the nurture flow</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Go to <strong>Flows → {email.categoryName} Nurture</strong> → find the{" "}
+                                  <strong>{email.position} (Day {email.day})</strong> email action → click &ldquo;Edit Content&rdquo; →
+                                  select &ldquo;Saved Templates&rdquo; → choose <strong>{email.templateName}</strong>.
+                                </p>
+                              </div>
+                            </li>
+                            <li className="flex gap-3">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">3</span>
+                              <div>
+                                <p className="font-medium">Set the subject line &amp; preview text</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Subject: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">{getSubject(email)}</code>
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Preview: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">{getPreview(email)}</code>
+                                </p>
+                              </div>
+                            </li>
+                            <li className="flex gap-3">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">4</span>
+                              <div>
+                                <p className="font-medium">Configure flow settings</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Set the time delay to <strong>Day {email.day}</strong> from flow entry.
+                                  Enable Smart Sending. Set the &ldquo;From&rdquo; name and email address.
+                                </p>
+                              </div>
+                            </li>
+                            <li className="flex gap-3">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">5</span>
+                              <div>
+                                <p className="font-medium">Set the email action to Live</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Change the email status from &ldquo;Draft&rdquo; to &ldquo;Live&rdquo; in the flow builder.
+                                  Once live, come back here and click &ldquo;Mark as Live&rdquo; below.
+                                </p>
+                              </div>
+                            </li>
+                          </ol>
+
+                          {/* Mark as Live button */}
+                          {(() => {
+                            const existing = getExistingPush(email.categoryCode, email.position);
+                            const isLive = existing?.status === "live";
+                            return (
+                              <div className="mt-4 pt-4 border-t border-blue-100 flex items-center gap-3">
+                                <button
+                                  onClick={() => handleMarkAsLive(email)}
+                                  disabled={isLive}
+                                  className={`px-5 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
+                                    isLive
+                                      ? "bg-green-100 text-green-700 cursor-default"
+                                      : "bg-green-600 text-white hover:bg-green-700"
+                                  }`}
+                                >
+                                  {isLive ? (
+                                    <>
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      Live — Marked as Done
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      Mark as Live
+                                    </>
+                                  )}
+                                </button>
+                                {isLive && existing?.markedLiveAt && (
+                                  <p className="text-[10px] text-gray-400">
+                                    Marked live {new Date(existing.markedLiveAt).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
 
                       {/* Generation metadata */}
                       {email.isAI && email.generatedAt && (
