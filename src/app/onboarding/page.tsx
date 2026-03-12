@@ -1,7 +1,8 @@
 // ============================================================================
 // PPW Email Engine — Onboarding Education Center
-// Guided implementation checklist with phase-based steps, progress tracking,
-// dependency management, time estimates, and milestone rewards.
+// Guided implementation checklist with process explanation, phase-based steps,
+// progress tracking, dependency management, time estimates, milestone rewards,
+// and a "How This System Works" explainer.
 // ============================================================================
 
 "use client";
@@ -22,11 +23,13 @@ import {
   computeStepStatuses,
   computeProgress,
 } from "@/framework/onboarding";
+import { FLOW_COUNTS } from "@/framework/flows";
 
 // ---------------------------------------------------------------------------
 // localStorage key
 // ---------------------------------------------------------------------------
 const STORAGE_KEY = "ppw-onboarding-completed";
+const EXPLAINER_DISMISSED_KEY = "ppw-explainer-dismissed";
 
 function loadCompleted(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -41,6 +44,11 @@ function loadCompleted(): Set<string> {
 
 function saveCompleted(ids: Set<string>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(ids)));
+}
+
+function loadExplainerDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(EXPLAINER_DISMISSED_KEY) === "true";
 }
 
 // ---------------------------------------------------------------------------
@@ -58,6 +66,384 @@ const DIFFICULTY_STYLES: Record<string, string> = {
   medium: "bg-yellow-100 text-yellow-700",
   hard:   "bg-red-100 text-red-700",
 };
+
+// ---------------------------------------------------------------------------
+// Component: SystemExplainer
+// ---------------------------------------------------------------------------
+function SystemExplainer({ onDismiss }: { onDismiss: () => void }) {
+  const [activeTab, setActiveTab] = useState<"overview" | "architecture" | "workflow">("overview");
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">How This Email System Works</h2>
+            <p className="text-green-100 text-sm mt-1">
+              A quick guide to the PPW Email Engine architecture before you start building
+            </p>
+          </div>
+          <button
+            onClick={onDismiss}
+            className="text-green-200 hover:text-white transition-colors flex-shrink-0 mt-1"
+            title="Dismiss — you can bring this back from the header"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mt-4">
+          {[
+            { id: "overview" as const, label: "The Big Picture" },
+            { id: "architecture" as const, label: "Architecture" },
+            { id: "workflow" as const, label: "Your Workflow" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "bg-white text-green-700"
+                  : "text-green-100 hover:bg-green-500/30"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="px-6 py-5">
+        {activeTab === "overview" && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              The PPW Email Engine is a complete email marketing system designed for Peak Primal Wellness.
+              It manages <span className="font-semibold text-green-700">{FLOW_COUNTS.total} automated flows</span> across
+              {" "}<span className="font-semibold text-green-700">14 product categories</span> (saunas, cold plunges, red light therapy, and more).
+              Everything is connected — from the moment someone takes a quiz on your site to their first purchase, follow-up, and beyond.
+            </p>
+
+            {/* What are flows? */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">📬</span>
+                  <h3 className="text-sm font-bold text-blue-800">What are Flows?</h3>
+                </div>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Flows are automated email sequences triggered by customer actions. When someone takes a quiz,
+                  abandons their cart, or makes a purchase, Klaviyo automatically sends the right emails at the
+                  right time. You build them once, and they run 24/7.
+                </p>
+              </div>
+
+              <div className="bg-purple-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🏷️</span>
+                  <h3 className="text-sm font-bold text-purple-800">Why so many categories?</h3>
+                </div>
+                <p className="text-xs text-purple-700 leading-relaxed">
+                  PPW sells high-ticket wellness equipment across many categories. Each category needs tailored
+                  messaging — a sauna buyer has different concerns than a cold plunge buyer. The naming system
+                  (SAU, CLD, RLT, etc.) keeps everything organized across hundreds of assets.
+                </p>
+              </div>
+
+              <div className="bg-amber-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">💰</span>
+                  <h3 className="text-sm font-bold text-amber-800">Why price tiers?</h3>
+                </div>
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  Someone browsing a $200 accessory gets a different experience than someone considering a $5,000
+                  sauna. High-value cart abandoners get more emails, personal outreach, and financing info.
+                  Entry-level gets a shorter, faster sequence.
+                </p>
+              </div>
+
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🎯</span>
+                  <h3 className="text-sm font-bold text-green-800">What does this dashboard do?</h3>
+                </div>
+                <p className="text-xs text-green-700 leading-relaxed">
+                  This app is your command center. It generates email copy, tracks what&apos;s been built vs planned,
+                  syncs with Klaviyo, manages your content pipeline, and guides you through the entire
+                  implementation step by step. You&apos;re looking at the guided onboarding now.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "architecture" && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Here&apos;s how all the pieces connect. The system has four layers that work together:
+            </p>
+
+            {/* Architecture layers */}
+            <div className="space-y-3">
+              {[
+                {
+                  num: "1",
+                  title: "Foundation Layer (Klaviyo Setup)",
+                  color: "blue",
+                  items: [
+                    "Lists — subscriber containers (Master, Category, Quiz, Exclusion)",
+                    "Segments — dynamic groups based on behavior (Hot Leads, VIP, Recent Buyers)",
+                    "Tags — organizational labels applied to flows, campaigns, and templates",
+                  ],
+                  note: "Think of this as the filing system. Everything that comes later depends on these being set up correctly.",
+                },
+                {
+                  num: "2",
+                  title: "Flow Layer (Automated Sequences)",
+                  color: "green",
+                  items: [
+                    `Entry flows (${FLOW_COUNTS.entry}) — welcome sequences and 45-day quiz nurtures`,
+                    `Engagement flows (${FLOW_COUNTS.engagement}) — browse, cart, and checkout abandonment`,
+                    `Post-purchase flows (${FLOW_COUNTS["post-purchase"]}) — order follow-up and upsells`,
+                    `Lifecycle flows (${FLOW_COUNTS.lifecycle}) — winback, VIP, and sunset`,
+                  ],
+                  note: "Each flow is a series of emails triggered by customer actions. Some are tiered by purchase value.",
+                },
+                {
+                  num: "3",
+                  title: "Content Layer (Email Copy & Templates)",
+                  color: "purple",
+                  items: [
+                    "Style system — brand colors, fonts, and layout for all emails",
+                    "Copy Generator — AI-assisted email writing tuned to your brand voice",
+                    "Template Manager — reusable Klaviyo templates for each email type",
+                    "Content Pipeline — maps blog posts and articles to email positions",
+                  ],
+                  note: "Content is generated per-category with the right product focus, then loaded into Klaviyo templates.",
+                },
+                {
+                  num: "4",
+                  title: "Execution Layer (Campaigns & Optimization)",
+                  color: "amber",
+                  items: [
+                    "Campaign Calendar — scheduled sends for newsletters, promos, and seasonal content",
+                    "A/B Testing — subject lines, send times, and content variants",
+                    "Revenue Attribution — tracking which flows and campaigns drive revenue",
+                    "Deliverability — list hygiene, bounce monitoring, and sunset flows",
+                  ],
+                  note: "Once flows are live, this layer is where ongoing optimization happens.",
+                },
+              ].map((layer) => {
+                const c = PHASE_COLORS[layer.color] ?? PHASE_COLORS.blue;
+                return (
+                  <div key={layer.num} className={`${c.bg} rounded-lg p-4`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`w-6 h-6 rounded-full ${c.bar} text-white text-xs font-bold flex items-center justify-center flex-shrink-0`}>
+                        {layer.num}
+                      </span>
+                      <h3 className={`text-sm font-bold ${c.text}`}>{layer.title}</h3>
+                    </div>
+                    <ul className="space-y-1 mb-2">
+                      {layer.items.map((item, i) => (
+                        <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
+                          <span className="text-gray-400 mt-0.5">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-[11px] text-gray-500 italic">{layer.note}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "workflow" && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Here&apos;s the order you should work through everything. The onboarding steps below follow this exact sequence,
+              but here&apos;s the high-level view:
+            </p>
+
+            {/* Workflow steps */}
+            <div className="relative">
+              {[
+                { step: "1", title: "Set up the foundation in Klaviyo", desc: "Create lists, segments, and tags using the naming conventions. This takes about 2 hours and unlocks everything else.", status: "foundation" },
+                { step: "2", title: "Configure your email branding", desc: "Set colors, fonts, and layout in the Style Editor. All generated emails will use these settings.", status: "foundation" },
+                { step: "3", title: "Build your first welcome flow", desc: "The 3-email welcome popup flow. This is the simplest flow and gets you comfortable with the process.", status: "core" },
+                { step: "4", title: "Build your first quiz nurture", desc: "The 11-email, 45-day sequence for your top quiz. This is the most complex flow type — the rest follow the same pattern.", status: "core" },
+                { step: "5", title: "Build abandonment flows", desc: "Browse → Cart → Checkout abandonment. These catch potential revenue that's walking away.", status: "core" },
+                { step: "6", title: "Build post-purchase flow", desc: "Turn buyers into repeat customers and reviewers. This completes the core customer journey.", status: "core" },
+                { step: "7", title: "Expand to more categories", desc: "Repeat quiz nurtures for additional categories. Each one follows the same template.", status: "expansion" },
+                { step: "8", title: "Add lifecycle flows", desc: "Winback, VIP, and sunset flows to maintain list health and reward top customers.", status: "expansion" },
+                { step: "9", title: "Optimize and iterate", desc: "A/B test, monitor deliverability, execute campaigns, and refresh content quarterly.", status: "optimization" },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4 mb-4 last:mb-0">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      item.status === "foundation" ? "bg-blue-100 text-blue-700" :
+                      item.status === "core" ? "bg-green-100 text-green-700" :
+                      item.status === "expansion" ? "bg-purple-100 text-purple-700" :
+                      "bg-amber-100 text-amber-700"
+                    }`}>
+                      {item.step}
+                    </div>
+                    {i < 8 && <div className="w-0.5 h-full bg-gray-200 mt-1" />}
+                  </div>
+                  <div className="pb-1">
+                    <h4 className="text-sm font-semibold text-gray-900">{item.title}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick links */}
+            <div className="bg-gray-50 rounded-lg p-4 mt-4">
+              <p className="text-xs font-semibold text-gray-700 mb-2">Quick links to get started:</p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/kanban" className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-md transition-colors border border-green-200">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                  </svg>
+                  Kanban Board — track all tasks
+                </Link>
+                <Link href="/framework" className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors border border-blue-200">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  Framework — naming conventions
+                </Link>
+                <Link href="/style-editor" className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-md transition-colors border border-purple-200">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                  Style Editor — email branding
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component: GoalCard — replaces the simple milestone system
+// ---------------------------------------------------------------------------
+interface Goal {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  stepsRequired: string[];
+  reward: string;
+}
+
+const GOALS: Goal[] = [
+  {
+    id: "G01",
+    title: "Foundation Ready",
+    description: "All lists, segments, tags, and popups configured in Klaviyo",
+    icon: "🏗️",
+    stepsRequired: ["F01-review-naming", "F02-create-master-lists", "F03-create-category-lists", "F04-create-exclusion-lists", "F05-setup-tags", "F06-create-core-segments", "F07-connect-popups", "F08-email-style-setup"],
+    reward: "Your Klaviyo workspace is organized and ready for flows!",
+  },
+  {
+    id: "G02",
+    title: "First Flow Live",
+    description: "Welcome popup flow built and active in Klaviyo",
+    icon: "⚡",
+    stepsRequired: ["CF01-welcome-popup-flow"],
+    reward: "New subscribers are now getting automated welcome emails!",
+  },
+  {
+    id: "G03",
+    title: "Revenue Recovery Active",
+    description: "All three abandonment flows live — catching lost revenue 24/7",
+    icon: "💸",
+    stepsRequired: ["CF03-browse-abandon", "CF04-cart-abandon", "CF05-checkout-abandon"],
+    reward: "You're now recovering revenue from browse, cart, and checkout abandoners!",
+  },
+  {
+    id: "G04",
+    title: "Full Customer Journey",
+    description: "Complete path from first visit to post-purchase follow-up",
+    icon: "🎯",
+    stepsRequired: ["CF01-welcome-popup-flow", "CF03-browse-abandon", "CF04-cart-abandon", "CF05-checkout-abandon", "CF06-post-purchase"],
+    reward: "Every stage of the customer journey is now automated!",
+  },
+  {
+    id: "G05",
+    title: "Nurture Machine",
+    description: "First 45-day quiz nurture sequence live and educating leads",
+    icon: "🧠",
+    stepsRequired: ["CF02-first-quiz-nurture"],
+    reward: "Your top quiz is now nurturing leads with an 11-email, 45-day sequence!",
+  },
+  {
+    id: "G06",
+    title: "Email Engine Complete",
+    description: "All flows built, lifecycle management active, optimization underway",
+    icon: "🚀",
+    stepsRequired: ALL_STEPS.map((s) => s.id),
+    reward: "Your complete email marketing engine is fully operational!",
+  },
+];
+
+function GoalCard({ goal, completedIds }: { goal: Goal; completedIds: Set<string> }) {
+  const completedCount = goal.stepsRequired.filter((id) => completedIds.has(id)).length;
+  const totalCount = goal.stepsRequired.length;
+  const isComplete = completedCount === totalCount;
+  const percentage = Math.round((completedCount / totalCount) * 100);
+
+  return (
+    <div
+      className={`border rounded-lg p-4 transition-all ${
+        isComplete
+          ? "bg-green-50 border-green-200 ring-1 ring-green-200"
+          : "bg-white border-gray-200"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span className={`text-2xl ${isComplete ? "" : "grayscale opacity-60"}`}>{goal.icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className={`text-sm font-bold ${isComplete ? "text-green-800" : "text-gray-800"}`}>
+              {goal.title}
+            </h3>
+            {isComplete && (
+              <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">{goal.description}</p>
+          {!isComplete && (
+            <div className="mt-2">
+              <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="h-1.5 rounded-full bg-green-400 transition-all duration-500"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">{completedCount}/{totalCount} steps</p>
+            </div>
+          )}
+          {isComplete && (
+            <p className="text-xs text-green-600 mt-1 font-medium">{goal.reward}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Component: ProgressBar
@@ -265,7 +651,6 @@ function PhaseSection({
   phase,
   steps,
   statuses,
-  completedIds,
   expandedStepId,
   phaseProgress,
   onToggleStep,
@@ -276,7 +661,6 @@ function PhaseSection({
   phase: Phase;
   steps: OnboardingStep[];
   statuses: Map<string, StepStatus>;
-  completedIds: Set<string>;
   expandedStepId: string | null;
   phaseProgress: { total: number; completed: number; percentage: number };
   onToggleStep: (id: string) => void;
@@ -381,12 +765,15 @@ export default function OnboardingPage() {
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [openPhases, setOpenPhases] = useState<Set<PhaseId>>(() => new Set<PhaseId>(["foundation"]));
   const [showMilestones, setShowMilestones] = useState(false);
+  const [showGoals, setShowGoals] = useState(true);
+  const [showExplainer, setShowExplainer] = useState(true);
   const [newMilestone, setNewMilestone] = useState<Milestone | null>(null);
   const [mounted, setMounted] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
     setCompletedIds(loadCompleted());
+    setShowExplainer(!loadExplainerDismissed());
     setMounted(true);
   }, []);
 
@@ -434,6 +821,11 @@ export default function OnboardingPage() {
     });
   }, []);
 
+  const dismissExplainer = useCallback(() => {
+    setShowExplainer(false);
+    localStorage.setItem(EXPLAINER_DISMISSED_KEY, "true");
+  }, []);
+
   const resetProgress = useCallback(() => {
     if (confirm("Reset all onboarding progress? This cannot be undone.")) {
       setCompletedIds(new Set());
@@ -458,13 +850,31 @@ export default function OnboardingPage() {
     <div className="px-8 py-8 max-w-4xl">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-          Onboarding Education Center
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Step-by-step guide to building your complete email marketing system in Klaviyo
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              Onboarding Education Center
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Step-by-step guide to building your complete email marketing system in Klaviyo
+            </p>
+          </div>
+          {!showExplainer && (
+            <button
+              onClick={() => setShowExplainer(true)}
+              className="text-xs text-gray-400 hover:text-green-600 transition-colors flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Show system guide
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* System Explainer */}
+      {showExplainer && <SystemExplainer onDismiss={dismissExplainer} />}
 
       {/* Overall Progress Card */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
@@ -480,7 +890,18 @@ export default function OnboardingPage() {
               )}
             </p>
           </div>
-          <span className="text-2xl font-bold text-green-700">{progress.percentage}%</span>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/kanban"
+              className="text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+              </svg>
+              Kanban Board
+            </Link>
+            <span className="text-2xl font-bold text-green-700">{progress.percentage}%</span>
+          </div>
         </div>
         <ProgressBar percentage={progress.percentage} color="green" />
 
@@ -509,6 +930,34 @@ export default function OnboardingPage() {
               <span className="font-medium text-gray-700">Next milestone:</span>{" "}
               {progress.nextMilestone.title} — complete {progress.nextMilestone.threshold - progress.completed} more step{progress.nextMilestone.threshold - progress.completed !== 1 ? "s" : ""}
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Goals Section */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowGoals(!showGoals)}
+          className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+          Goals ({GOALS.filter((g) => g.stepsRequired.every((id) => completedIds.has(id))).length}/{GOALS.length})
+          <svg
+            className={`w-4 h-4 transition-transform ${showGoals ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {showGoals && (
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {GOALS.map((goal) => (
+              <GoalCard key={goal.id} goal={goal} completedIds={completedIds} />
+            ))}
           </div>
         )}
       </div>
@@ -553,7 +1002,6 @@ export default function OnboardingPage() {
             phase={phase}
             steps={getStepsByPhase(phase.id)}
             statuses={statuses}
-            completedIds={completedIds}
             expandedStepId={expandedStep}
             phaseProgress={progress.byPhase[phase.id]}
             onToggleStep={toggleStep}
